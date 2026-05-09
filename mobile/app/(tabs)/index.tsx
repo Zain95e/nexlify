@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../src/theme';
 import api from '../../src/api';
 import { RootState } from '../../src/store';
+import { PremiumAppUsageChart } from '../../src/components/PremiumAppUsageChart';
+import { CategoryPieChart } from '../../src/components/CategoryPieChart';
+import { ScreenTimeLineChart } from '../../src/components/ScreenTimeLineChart';
+import { TimeFrameToggle } from '../../src/components/TimeFrameToggle';
 
 export default function HomeScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [timeFrame, setTimeFrame] = useState<'day' | 'week' | 'month'>('day');
 
   const fetchStats = async () => {
     try {
@@ -33,6 +38,14 @@ export default function HomeScreen() {
     fetchStats();
   };
 
+  const dummyAppUsage = [
+    { name: 'Instagram', duration: '1h 12m', percentage: 85, color: Colors.secondary },
+    { name: 'WhatsApp', duration: '45m', percentage: 60, color: Colors.tertiary },
+    { name: 'YouTube', duration: '32m', percentage: 45, color: Colors.warning },
+    { name: 'LinkedIn', duration: '12m', percentage: 20, color: Colors.primary },
+    { name: 'TikTok', duration: '8m', percentage: 15, color: '#FF0050' },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -41,14 +54,41 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
         }
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.name}>{user?.name || 'User'}</Text>
+        {/* Screen Time Header (3.3.1) */}
+        <View style={styles.screenTimeHeader}>
+          <Text style={styles.screenTimeLabel}>Today's Screen Time</Text>
+          <Text style={styles.screenTimeValue}>{timeFrame === 'day' ? '3h 42m' : timeFrame === 'week' ? '24h 15m' : '92h 40m'}</Text>
+          <View style={styles.trendRow}>
+            <Ionicons name="trending-down" size={14} color={Colors.success} />
+            <Text style={styles.trendText}>12% less than last {timeFrame}</Text>
           </View>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>LVL {user?.level || 1}</Text>
+        </View>
+
+        <View style={{ marginBottom: 24 }}>
+          <TimeFrameToggle value={timeFrame} onChange={setTimeFrame} />
+        </View>
+
+        {/* App Usage Chart (3.3.2) */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Top App Usage</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>Details</Text>
+            </TouchableOpacity>
           </View>
+          <PremiumAppUsageChart />
+        </View>
+
+        {/* Category Pie Chart (3.3.3) */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <CategoryPieChart />
+        </View>
+
+        {/* Monthly Trend (3.3.4) */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>30-Day Trend</Text>
+          <ScreenTimeLineChart />
         </View>
 
         {/* Weekly Summary Card (4.2.6) */}
@@ -120,6 +160,58 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 32,
+  },
+  screenTimeHeader: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  screenTimeLabel: {
+    fontSize: 14,
+    color: Colors.muted,
+    fontFamily: 'DM Sans',
+    marginBottom: 8,
+  },
+  screenTimeValue: {
+    fontSize: 48,
+    fontWeight: '800',
+    fontFamily: 'Syne',
+    color: Colors.text,
+  },
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: 'rgba(0, 212, 170, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  trendText: {
+    fontSize: 12,
+    color: Colors.success,
+    marginLeft: 4,
+    fontFamily: 'DM Sans',
+    fontWeight: '600',
+  },
+  sectionCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 24,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  viewAll: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontFamily: 'Syne',
+    fontWeight: '700',
   },
   greeting: {
     fontSize: 16,
