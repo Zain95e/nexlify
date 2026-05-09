@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -30,41 +28,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: zynalex9/nexlify-backend:latest
-    container_name: nexlify_backend
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    environment:
-      # Override these so they point to Docker service names, not localhost
-      DB_HOST: postgres
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379
-      AI_SERVICE_URL: http://ai-service:8000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  ai-service:
-    build:
-      context: ./ai-service
-      dockerfile: Dockerfile
-    image: zynalex9/nexlify-ai-service:latest
-    container_name: nexlify_ai_service
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    env_file:
-      - ./ai-service/.env
 
 volumes:
   pgdata:

@@ -1,0 +1,43 @@
+@contextScopeItemMentionIn the phases.md file all the database schema and structure is written before the starting of the phases please take a detailed look there before executing anything
+ For context you can reed the files and lets execute this
+Phase 1 — Backend Foundation
+1.1.0 — Project Initialisation
+
+1.1.1 Initialise Node.js/Express; configure folder structure (/routes, /controllers, /models, /middleware)
+1.1.2 Connect Express to PostgreSQL using pg or Sequelize ORM (over here I think we will need to run it in docker container)
+1.1.3 Set up Redis connection with ioredis (also redis is running in docker)
+1.1.4 Create central error handler middleware and request logger (morgan)
+1.1.5 Write health-check endpoint: GET /api/health → { status: "ok" }
+1.2.0 — Database Migrations
+
+Run these in order. Column names match the schema above exactly.
+
+1.2.1 users — id, name, email, password_hash, fcm_token, total_points, level, created_at
+1.2.2 user_settings — id, user_id FK, all notify_* booleans
+1.2.3 tasks — id, user_id FK, title, description, deadline, priority, category, is_completed, created_at, completed_at
+1.2.4 diary_entries — id, user_id FK, content, mood, tags (TEXT[]), sentiment_score, created_at, updated_at
+1.2.5 goals — id, user_id FK, description, target_count, current_count, deadline, daily_target, category, is_completed, created_at
+1.2.6 daily_tasks — id, goal_id FK, date, target_count, completed_count, is_auto_adjusted
+1.2.7 screen_time — id, user_id FK, app_name, app_package, category, duration_minutes, session_date
+1.2.8 app_limits — id, user_id FK, app_package, daily_limit_minutes
+1.2.9 blocking_overrides — id, user_id FK, app_package, overridden_at
+1.2.10 detox_sessions — id, user_id FK, started_at, ended_at, planned_duration_minutes, break_count
+1.2.11 pomodoro_sessions — id, user_id FK, start_time, end_time, duration_minutes, was_completed
+1.2.12 health_data — id, user_id FK, date, sleep_hours, sleep_quality, steps, active_minutes
+1.2.13 connections — id, requester_id FK, addressee_id FK, status, created_at
+1.2.14 shared_streaks — id, user1_id FK, user2_id FK, habit_name, current_streak, user1_done_today, user2_done_today, last_updated, start_date
+1.2.15 insights — id, user_id FK, type, content, generated_at, is_read
+1.2.16 achievements — id, name, description, criteria_key, criteria_value, points_reward
+1.2.17 user_achievements — id, user_id FK, achievement_id FK, unlocked_at
+1.3.0 — Authentication System
+
+1.3.1 POST /api/auth/register — validate input, hash password (bcrypt), insert user + default user_settings row, return JWT
+1.3.2 POST /api/auth/login — validate credentials, return JWT + refresh token
+1.3.3 POST /api/auth/refresh — validate refresh token (Redis), issue new JWT
+1.3.4 POST /api/auth/logout — blacklist refresh token in Redis
+1.3.5 authenticateJWT middleware — validates token, attaches req.user to all protected routes
+1.3.6 Test all auth endpoints in Postman
+
+
+
+lets get done with phase 1
