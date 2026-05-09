@@ -6,10 +6,12 @@ const cors = require('cors');
 const { connectDB } = require('./config/db');
 const { connectRedis } = require('./config/redis');
 const { errorHandler } = require('./middleware/errorHandler');
+const ReminderService = require('./services/reminderService');
 
 // Routes
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
+const taskRouter = require('./routes/taskRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +25,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/tasks', taskRouter);
 
 // 404 fallthrough handler
 app.use((req, res) => {
@@ -36,6 +39,9 @@ app.use(errorHandler);
 const start = async () => {
   await connectDB();
   connectRedis();
+
+  // Initialize automated services
+  ReminderService.init();
 
   app.listen(PORT, () => {
     console.log(`[Server] Nexlify backend running on http://localhost:${PORT}`);
