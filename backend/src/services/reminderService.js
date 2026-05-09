@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const pool = require('../config/db');
+const { pool } = require('../config/db');
 const admin = require('../config/firebase');
 
 /**

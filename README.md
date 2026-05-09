@@ -48,16 +48,55 @@ git clone https://github.com/Zynalex9/nexlify.git
 cd nexlify
 ```
 
-### 2. Set up environment variables
+### 3. Install Dependencies
 
+You need to install dependencies for each service individually:
+
+**Backend:**
 ```bash
-cp backend/.env.example backend/.env
-cp ai-service/.env.example ai-service/.env
+cd backend
+npm install
 ```
 
-Open `backend/.env` and fill in the real values for:
-- `JWT_SECRET` — any long random string
-- `FIREBASE_*` — from Firebase Console → Project Settings → Service Accounts
+**Mobile:**
+```bash
+cd mobile
+npm install
+```
+
+**AI Service:**
+```bash
+cd ai-service
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+## Running the Application
+
+### 1. Start the Infrastructure (Docker)
+Ensure Docker is running, then start Postgres and Redis:
+```bash
+docker-compose up -d
+```
+
+### 2. Start the Backend
+```bash
+cd backend
+npm run dev
+```
+
+### 3. Start the AI Service
+```bash
+cd ai-service
+python main.py
+```
+
+### 4. Start the Mobile App
+```bash
+cd mobile
+npx expo start
+```
 - `GROQ_API_KEY` — free at [console.groq.com](https://console.groq.com)
 - `GOOGLE_*` — from Google Cloud Console (optional — needed for Fit & Speech)
 

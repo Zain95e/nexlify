@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const { pool } = require('../config/db');
 const PointsService = require('../services/pointsService');
 
 const taskController = {
