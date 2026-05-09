@@ -27,12 +27,17 @@ router.get('/', async (req, res) => {
     health.status = 'degraded';
   }
 
-  // Check Redis
+  // Check Redis (with timeout)
   try {
     const redis = getRedis();
-    await redis.ping();
+    // Race the ping against a 2s timeout
+    await Promise.race([
+      redis.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+    ]);
     health.services.redis = 'ok';
-  } catch {
+  } catch (error) {
+    console.error('[Health] Redis check failed:', error.message);
     health.services.redis = 'error';
     health.status = 'degraded';
   }

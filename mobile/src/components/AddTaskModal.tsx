@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Typography } from '../theme';
 import { Input } from './Input';
 import { Button } from './Button';
@@ -20,14 +21,35 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [category, setCategory] = useState('Dev');
-  const [deadline, setDeadline] = useState(new Date().toISOString());
+  const [deadline, setDeadline] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const newDate = new Date(deadline);
+      newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      setDeadline(newDate);
+    }
+  };
+
+  const onChangeTime = (event: any, selectedDate?: Date) => {
+    setShowTimePicker(false);
+    if (selectedDate) {
+      const newDate = new Date(deadline);
+      newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+      setDeadline(newDate);
+    }
+  };
 
   const handleSubmit = () => {
     if (!title) return;
-    onSubmit({ title, description, priority, category, deadline });
+    onSubmit({ title, description, priority, category, deadline: deadline.toISOString() });
     // Reset form
     setTitle('');
     setDescription('');
+    setDeadline(new Date());
     onClose();
   };
 
@@ -58,6 +80,37 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
               numberOfLines={3}
               containerStyle={{ height: 100 }}
             />
+
+            <Text style={styles.label}>Deadline</Text>
+            <View style={styles.dateTimeContainer}>
+              <TouchableOpacity style={styles.dateTimeBtn} onPress={() => setShowDatePicker(true)}>
+                <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+                <Text style={styles.dateTimeText}>{deadline.toLocaleDateString()}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dateTimeBtn} onPress={() => setShowTimePicker(true)}>
+                <Ionicons name="time-outline" size={18} color={Colors.primary} />
+                <Text style={styles.dateTimeText}>
+                  {deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={deadline}
+                mode="date"
+                display="default"
+                onChange={onChangeDate}
+              />
+            )}
+            {showTimePicker && (
+              <DateTimePicker
+                value={deadline}
+                mode="time"
+                display="default"
+                onChange={onChangeTime}
+              />
+            )}
 
             <Text style={styles.label}>Priority</Text>
             <View style={styles.optionsRow}>
@@ -138,6 +191,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontFamily: 'Syne',
     textTransform: 'uppercase',
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  dateTimeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 8,
+  },
+  dateTimeText: {
+    color: Colors.text,
+    fontFamily: 'DM Sans',
+    fontSize: 14,
+    fontWeight: '500',
   },
   optionsRow: {
     flexDirection: 'row',
