@@ -1,0 +1,17 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Env
+.env
+
+# Python
+venv/
+__pycache__/
+
+# Build
+dist/
+build/
+
+# OS
+.DS_Store
