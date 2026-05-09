@@ -1,0 +1,729 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0A0A0F;
+--surface:#13131A;
+--card:#1C1C27;
+--border:#2A2A3A;
+--accent:#6C63FF;
+--accent2:#FF6B9D;
+--accent3:#00D4AA;
+--accent4:#FFB347;
+--text:#F0EFF8;
+--muted:#8A899A;
+--font:'Syne',sans-serif;
+--body:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden}
+.wrap{padding:24px;max-width:1400px;margin:0 auto}
+.header{text-align:center;margin-bottom:40px}
+.header h1{font-family:var(--font);font-size:28px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#6C63FF,#FF6B9D,#00D4AA);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--muted);font-size:13px;margin-top:6px}
+
+.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.tab{padding:8px 18px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px}
+.tab:hover{border-color:var(--accent);color:var(--accent)}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.screen-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;justify-items:center}
+.phone{width:240px;background:var(--surface);border-radius:36px;border:2px solid var(--border);overflow:hidden;position:relative;box-shadow:0 0 0 6px #13131A, 0 0 0 7px #2A2A3A}
+.phone-notch{width:80px;height:22px;background:var(--bg);border-radius:0 0 14px 14px;margin:0 auto;position:relative;z-index:10}
+.phone-screen{padding:0;min-height:480px;overflow:hidden}
+
+.screen-label{font-family:var(--font);font-size:11px;font-weight:700;color:var(--muted);text-align:center;margin-top:12px;letter-spacing:1px;text-transform:uppercase}
+
+/* Status bar */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 16px;font-size:9px;color:var(--muted);font-weight:600;background:var(--surface)}
+
+/* Bottom nav */
+.bottom-nav{display:flex;justify-content:space-around;padding:10px 8px 14px;background:var(--card);border-top:1px solid var(--border)}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;color:var(--muted);font-family:var(--font);font-weight:600}
+.nav-item.active{color:var(--accent)}
+.nav-icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);margin:0 auto}
+
+/* Content styles */
+.px{padding:0 14px}
+.section-title{font-family:var(--font);font-size:13px;font-weight:700;color:var(--text);margin:12px 14px 8px}
+.section-row{display:flex;justify-content:space-between;align-items:center;padding:0 14px;margin-bottom:8px}
+.see-all{font-size:9px;color:var(--accent);font-weight:600}
+
+/* Cards */
+.card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:12px}
+.card-sm{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px}
+.mx{margin:0 14px 10px}
+
+/* Metrics */
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 14px 10px}
+.metric{background:var(--card);border-radius:12px;padding:10px;border:1px solid var(--border)}
+.metric-val{font-family:var(--font);font-size:18px;font-weight:800;color:var(--text)}
+.metric-label{font-size:9px;color:var(--muted);margin-top:2px}
+.metric-change{font-size:9px;font-weight:600;margin-top:4px}
+.up{color:#00D4AA}.down{color:#FF6B9D}
+
+/* Progress */
+.prog-wrap{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:99px}
+
+/* Task item */
+.task-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.task-check{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0}
+.task-check.done{background:var(--accent3);border-color:var(--accent3);display:flex;align-items:center;justify-content:center}
+.task-text{font-size:10px;flex:1}
+.task-text.done{color:var(--muted);text-decoration:line-through}
+.priority-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:8px;font-weight:700;font-family:var(--font)}
+.badge-purple{background:rgba(108,99,255,0.2);color:#9B94FF}
+.badge-green{background:rgba(0,212,170,0.2);color:#00D4AA}
+.badge-red{background:rgba(255,107,157,0.2);color:#FF6B9D}
+.badge-amber{background:rgba(255,179,71,0.2);color:#FFB347}
+
+/* Avatar */
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
+/* Chart bar */
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:60px}
+.bar{flex:1;border-radius:4px 4px 0 0;min-width:12px}
+.bar-label{font-size:7px;color:var(--muted);text-align:center;margin-top:3px}
+
+/* Ring progress */
+.ring-wrap{display:flex;justify-content:center;align-items:center;margin:8px 0}
+
+/* Pomodoro timer */
+.timer-display{text-align:center;padding:16px}
+.timer-ring{width:120px;height:120px;margin:0 auto 12px;position:relative}
+.timer-num{font-family:var(--font);font-size:28px;font-weight:800;color:var(--text);text-align:center}
+.timer-sub{font-size:9px;color:var(--muted);text-align:center;margin-top:2px}
+
+/* Diary mood */
+.mood-row{display:flex;justify-content:space-around;padding:8px 0}
+.mood-pill{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid transparent}
+.mood-pill.sel{border-color:var(--accent)}
+
+/* Streak */
+.streak-card{background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(255,107,157,0.1));border-radius:16px;border:1px solid rgba(108,99,255,0.3);padding:12px;margin:0 14px 10px}
+
+/* Goal calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:0 14px}
+.cal-day{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600}
+.cal-done{background:var(--accent3);color:#003D30}
+.cal-miss{background:rgba(255,107,157,0.3);color:#FF6B9D}
+.cal-future{background:var(--border);color:var(--muted)}
+.cal-today{background:var(--accent);color:#fff;border:1px solid rgba(255,255,255,0.3)}
+
+.page{display:none}
+.page.active{display:block}
+
+/* Chat bubble */
+.chat-msg{margin:0 14px 8px}
+.chat-user{background:var(--accent);border-radius:14px 14px 4px 14px;padding:8px 10px;font-size:9px;margin-left:30px;color:#fff}
+.chat-bot{background:var(--card);border-radius:14px 14px 14px 4px;padding:8px 10px;font-size:9px;color:var(--text);border:1px solid var(--border)}
+
+/* Achievement */
+.ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 14px}
+.ach{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:8px;text-align:center}
+.ach.locked{opacity:0.4}
+.ach-icon{font-size:20px;margin-bottom:4px}
+.ach-name{font-size:8px;font-weight:700;font-family:var(--font);color:var(--text)}
+
+/* Insight card */
+.insight{background:linear-gradient(135deg,rgba(0,212,170,0.12),rgba(108,99,255,0.08));border:1px solid rgba(0,212,170,0.25);border-radius:14px;padding:10px;margin:0 14px 10px}
+.insight-title{font-size:10px;font-weight:700;font-family:var(--font);color:var(--accent3)}
+.insight-body{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5}
+
+.btn{border-radius:10px;border:none;font-family:var(--font);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-primary{background:var(--accent);color:#fff;padding:9px;font-size:10px;width:100%}
+.btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:7px;font-size:9px}
+
+.screen-container{display:none}
+.screen-container.active{display:grid}
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <h1>Nexlify — Focus Flow</h1>
+    <p>UI Design System · React Native Android · 9 Core Screens</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showGroup('overview')">All Screens</div>
+    <div class="tab" onclick="showGroup('core')">Core</div>
+    <div class="tab" onclick="showGroup('focus')">Focus & Goals</div>
+    <div class="tab" onclick="showGroup('insights')">AI & Social</div>
+  </div>
+
+  <div id="grp-overview" class="screen-container active screen-grid">
+
+    <!-- SCREEN 1: DASHBOARD -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 6px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:9px;color:var(--muted)">Good morning ☀️</div>
+              <div style="font-family:var(--font);font-size:16px;font-weight:800">Zain Ali</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <div style="background:rgba(255,179,71,0.2);border-radius:99px;padding:3px 8px;font-size:9px;color:#FFB347;font-weight:700">⚡ Lv.7</div>
+              <div class="avatar">ZA</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div class="metric">
+              <div class="metric-val">4h 12m</div>
+              <div class="metric-label">Screen time today</div>
+              <div class="metric-change down">+38min vs avg</div>
+              <div class="prog-wrap"><div class="prog-fill" style="width:65%;background:var(--accent2)"></div></div>
+            </div>
+            <div class="metric">
+              <div class="metric-val">7/10</div>
+              <div class="metric-label">Tasks done</div>
+              <div class="metric-change up">+2 vs yesterday</div>
+              <div class="prog-wrap"><div class="prog-fill" style="width:70%;background:var(--accent3)"></div></div>
+            </div>
+          </div>
+          <div class="mx card-sm" style="margin-bottom:8px">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">SCREEN TIME · TODAY</div>
+            <div class="bar-chart">
+              <div><div class="bar" style="height:35px;background:var(--accent2)"></div><div class="bar-label">Insta</div></div>
+              <div><div class="bar" style="height:25px;background:var(--accent)"></div><div class="bar-label">YT</div></div>
+              <div><div class="bar" style="height:18px;background:var(--accent3)"></div><div class="bar-label">Maps</div></div>
+              <div><div class="bar" style="height:12px;background:var(--accent3)"></div><div class="bar-label">Mail</div></div>
+              <div><div class="bar" style="height:50px;background:rgba(255,107,157,0.5)"></div><div class="bar-label">TikTok</div></div>
+            </div>
+          </div>
+          <div class="mx card-sm" style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:9px;font-weight:700;font-family:var(--font)">Daily Challenge</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Complete 5 tasks today</div>
+              </div>
+              <div style="background:rgba(255,179,71,0.2);border-radius:8px;padding:4px 8px;font-size:9px;color:#FFB347;font-weight:700">+50 XP</div>
+            </div>
+            <div class="prog-wrap" style="margin-top:8px"><div class="prog-fill" style="width:40%;background:var(--accent4)"></div></div>
+            <div style="font-size:8px;color:var(--muted);margin-top:3px">2 of 5 complete</div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(108,99,255,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="#6C63FF"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div><div class="nav-dot"></div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><polyline points="2,9 5,6 7,8 10,3"/></svg></div><div style="font-size:7px">Tasks</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M2 9V5a4 4 0 018 0v4M1 9h10"/></svg></div><div style="font-size:7px">Diary</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg></div><div style="font-size:7px">Goals</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="4" r="2"/><path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg></div><div style="font-size:7px">More</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Dashboard</div>
+    </div>
+
+    <!-- SCREEN 2: TASKS -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font);font-size:16px;font-weight:800">Tasks</div>
+            <div style="width:28px;height:28px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M7 1v12M1 7h12"/></svg>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;padding:0 14px 10px">
+            <div style="background:var(--accent);border-radius:99px;padding:4px 12px;font-size:9px;font-weight:700;color:#fff">Pending <span style="background:rgba(255,255,255,0.3);border-radius:99px;padding:1px 5px;margin-left:3px">6</span></div>
+            <div style="background:var(--card);border-radius:99px;padding:4px 12px;font-size:9px;font-weight:700;color:var(--muted);border:1px solid var(--border)">Done <span style="background:var(--border);border-radius:99px;padding:1px 5px;margin-left:3px">4</span></div>
+          </div>
+          <div style="padding:0 14px;flex:1">
+            <div class="task-item">
+              <div class="task-check"></div>
+              <div style="flex:1">
+                <div class="task-text" style="font-weight:600;color:#FF6B9D">⚠ Review FYP proposal</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Due 11:00 AM · Overdue</div>
+              </div>
+              <div class="priority-dot" style="background:#FF4040"></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check"></div>
+              <div style="flex:1">
+                <div class="task-text" style="font-weight:600">Design database schema</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Due 3:00 PM · <span class="badge badge-purple">High</span></div>
+              </div>
+              <div class="priority-dot" style="background:var(--accent)"></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check"></div>
+              <div style="flex:1">
+                <div class="task-text">Write backend auth module</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Due tomorrow · <span class="badge badge-amber">Med</span></div>
+              </div>
+              <div class="priority-dot" style="background:var(--accent4)"></div>
+            </div>
+            <div class="task-item">
+              <div class="task-check done"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#fff" stroke-width="1.5"><polyline points="1.5,4 3,5.5 6.5,2"/></svg></div>
+              <div style="flex:1">
+                <div class="task-text done">Set up GitHub repo</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Completed 9:12 AM</div>
+              </div>
+            </div>
+            <div class="task-item">
+              <div class="task-check done"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#fff" stroke-width="1.5"><polyline points="1.5,4 3,5.5 6.5,2"/></svg></div>
+              <div style="flex:1">
+                <div class="task-text done">Configure ESLint + Prettier</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Completed 8:45 AM</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);margin-top:6px">
+            <div style="background:var(--card);border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--border)">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg>
+              <span style="font-size:9px;color:var(--muted)">You've completed 70% this week · Last week: 58%</span>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div><div style="font-size:7px">Home</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(108,99,255,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6C63FF" stroke-width="1.5"><polyline points="2,9 5,6 7,8 10,3"/></svg></div><div class="nav-dot"></div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M2 9V5a4 4 0 018 0v4M1 9h10"/></svg></div><div style="font-size:7px">Diary</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg></div><div style="font-size:7px">Goals</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="4" r="2"/><path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg></div><div style="font-size:7px">More</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Task Manager</div>
+    </div>
+
+    <!-- SCREEN 3: DIARY -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 6px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font);font-size:16px;font-weight:800">Journal</div>
+            <div style="width:28px;height:28px;background:var(--accent2);border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M7 1v12M1 7h12"/></svg>
+            </div>
+          </div>
+          <div style="padding:6px 14px 8px">
+            <div style="background:var(--card);border-radius:12px;padding:6px 10px;display:flex;align-items:center;gap:6px;border:1px solid var(--border)">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="5" cy="5" r="3"/><path d="M9 9l-2-2"/></svg>
+              <span style="font-size:9px;color:var(--muted)">Search entries...</span>
+            </div>
+          </div>
+          <div style="padding:0 14px 6px;display:grid;grid-template-columns:repeat(7,1fr);gap:3px">
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">M</div><div style="width:22px;height:22px;border-radius:50%;background:var(--card);font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">13</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">T</div><div style="width:22px;height:22px;border-radius:50%;font-size:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,107,157,0.3);color:var(--accent2)">14</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">W</div><div style="width:22px;height:22px;border-radius:50%;font-size:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,212,170,0.3);color:var(--accent3)">15</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">T</div><div style="width:22px;height:22px;border-radius:50%;font-size:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,179,71,0.3);color:var(--accent4)">16</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">F</div><div style="width:22px;height:22px;border-radius:50%;font-size:8px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff">17</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">S</div><div style="width:22px;height:22px;border-radius:50%;background:var(--border);font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">18</div></div>
+            <div style="text-align:center"><div style="font-size:7px;color:var(--muted);margin-bottom:4px">S</div><div style="width:22px;height:22px;border-radius:50%;background:var(--border);font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">19</div></div>
+          </div>
+          <div style="padding:0 14px">
+            <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:10px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                <div style="font-size:9px;font-weight:700;color:var(--text)">Today, Apr 17</div>
+                <div style="font-size:14px">😊</div>
+              </div>
+              <div style="font-size:9px;color:var(--muted);line-height:1.5">Had a really productive Pomodoro session. Finished the auth module and started on the DB schema...</div>
+              <div style="display:flex;gap:4px;margin-top:6px"><span class="badge badge-purple">focus</span><span class="badge badge-green">productive</span></div>
+            </div>
+            <div style="background:var(--card);border-radius:14px;border:1px solid var(--border);padding:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                <div style="font-size:9px;font-weight:700;color:var(--text)">Apr 16</div>
+                <div style="font-size:14px">😴</div>
+              </div>
+              <div style="font-size:9px;color:var(--muted);line-height:1.5">Feeling a bit tired today. Screen time was high — TikTok again. Need to set stricter limits...</div>
+              <div style="display:flex;gap:4px;margin-top:6px"><span class="badge badge-red">tired</span><span class="badge badge-amber">screen time</span></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div><div style="font-size:7px">Home</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><polyline points="2,9 5,6 7,8 10,3"/></svg></div><div style="font-size:7px">Tasks</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(255,107,157,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#FF6B9D" stroke-width="1.5"><path d="M2 9V5a4 4 0 018 0v4M1 9h10"/></svg></div><div class="nav-dot" style="background:var(--accent2)"></div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg></div><div style="font-size:7px">Goals</div></div>
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="6" cy="4" r="2"/><path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg></div><div style="font-size:7px">More</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Digital Diary</div>
+    </div>
+
+    <!-- SCREEN 4: POMODORO -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 4px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font);font-size:16px;font-weight:800">Focus Timer</div>
+            <div class="badge badge-green">Session 2/4</div>
+          </div>
+          <div style="text-align:center;padding:16px 14px 8px">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="60" fill="none" stroke="var(--border)" stroke-width="8"/>
+              <circle cx="70" cy="70" r="60" fill="none" stroke="var(--accent)" stroke-width="8"
+                stroke-dasharray="251" stroke-dashoffset="70" stroke-linecap="round"
+                transform="rotate(-90 70 70)"/>
+              <text x="70" y="62" text-anchor="middle" fill="var(--text)" font-family="Syne,sans-serif" font-size="26" font-weight="800">18:34</text>
+              <text x="70" y="78" text-anchor="middle" fill="var(--muted)" font-family="DM Sans,sans-serif" font-size="9">remaining</text>
+            </svg>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px;justify-content:center;margin-bottom:12px">
+            <div style="background:var(--card);border-radius:10px;border:1px solid var(--border);padding:6px 14px;font-size:9px;color:var(--muted);font-weight:600">⏮ Reset</div>
+            <div style="background:var(--accent);border-radius:10px;padding:8px 24px;font-size:11px;color:#fff;font-family:var(--font);font-weight:700">⏸ Pause</div>
+            <div style="background:var(--card);border-radius:10px;border:1px solid var(--border);padding:6px 14px;font-size:9px;color:var(--muted);font-weight:600">Skip ⏭</div>
+          </div>
+          <div class="insight" style="margin-bottom:8px">
+            <div class="insight-title">Break Suggestion Ready</div>
+            <div class="insight-body">You seem focused today 😊 — next break: take a short walk or drink water for 5 min.</div>
+          </div>
+          <div class="mx card-sm">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">TODAY'S FOCUS</div>
+            <div style="display:flex;gap:10px">
+              <div><div style="font-family:var(--font);font-size:16px;font-weight:800;color:var(--accent)">2</div><div style="font-size:8px;color:var(--muted)">sessions</div></div>
+              <div><div style="font-family:var(--font);font-size:16px;font-weight:800;color:var(--accent3)">41m</div><div style="font-size:8px;color:var(--muted)">focused</div></div>
+              <div><div style="font-family:var(--font);font-size:16px;font-weight:800;color:var(--accent4)">+30</div><div style="font-size:8px;color:var(--muted)">XP earned</div></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="nav-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="1" y="1" width="4" height="4" rx="1"/></svg></div><div style="font-size:7px">Home</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Tasks</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Diary</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(108,99,255,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#6C63FF" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg></div><div class="nav-dot"></div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">More</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Pomodoro Timer</div>
+    </div>
+
+    <!-- SCREEN 5: GOALS -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font);font-size:16px;font-weight:800">Goals</div>
+            <div style="width:28px;height:28px;background:var(--accent3);border-radius:8px;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M7 1v12M1 7h12"/></svg>
+            </div>
+          </div>
+          <div class="mx" style="background:linear-gradient(135deg,rgba(0,212,170,0.15),rgba(108,99,255,0.1));border:1px solid rgba(0,212,170,0.3);border-radius:16px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:10px;font-weight:700;font-family:var(--font)">Read 12 books</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Deadline: Dec 31 · <span class="badge badge-green">On track</span></div>
+              </div>
+              <div style="text-align:right"><div style="font-family:var(--font);font-size:18px;font-weight:800;color:var(--accent3)">7</div><div style="font-size:8px;color:var(--muted)">of 12</div></div>
+            </div>
+            <div class="prog-wrap" style="margin:8px 0 4px"><div class="prog-fill" style="width:58%;background:var(--accent3)"></div></div>
+            <div style="font-size:8px;color:var(--muted)">Today's target: 18 pages · <span style="color:var(--accent4)">Auto-adjusted ✦</span></div>
+          </div>
+          <div class="mx" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:10px;font-weight:700;font-family:var(--font)">Run 100km</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px">Deadline: Jun 30 · <span class="badge badge-amber">Behind</span></div>
+              </div>
+              <div style="text-align:right"><div style="font-family:var(--font);font-size:18px;font-weight:800;color:var(--accent4)">22</div><div style="font-size:8px;color:var(--muted)">of 100</div></div>
+            </div>
+            <div class="prog-wrap" style="margin:8px 0 4px"><div class="prog-fill" style="width:22%;background:var(--accent4)"></div></div>
+            <div style="font-size:8px;color:var(--muted)">Today's target: 2.8 km</div>
+          </div>
+          <div style="padding:4px 14px;margin-bottom:6px">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600;font-family:var(--font)">APR PROGRESS — READ 12 BOOKS</div>
+            <div class="cal-grid" style="padding:0">
+              <div class="cal-day cal-done">1</div><div class="cal-day cal-done">2</div><div class="cal-day cal-miss">3</div><div class="cal-day cal-done">4</div><div class="cal-day cal-done">5</div><div class="cal-day cal-done">6</div><div class="cal-day cal-miss">7</div>
+              <div class="cal-day cal-done">8</div><div class="cal-day cal-done">9</div><div class="cal-day cal-done">10</div><div class="cal-day cal-miss">11</div><div class="cal-day cal-done">12</div><div class="cal-day cal-done">13</div><div class="cal-day cal-done">14</div>
+              <div class="cal-day cal-done">15</div><div class="cal-day cal-done">16</div><div class="cal-day cal-today">17</div><div class="cal-day cal-future">18</div><div class="cal-day cal-future">19</div><div class="cal-day cal-future">20</div><div class="cal-day cal-future">21</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div style="display:flex;align-items:center;gap:3px;font-size:7px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--accent3)"></div>Done</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:7px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:rgba(255,107,157,0.3)"></div>Missed</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:7px;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--accent)"></div>Today</div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Home</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Tasks</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Diary</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(0,212,170,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#00D4AA" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1.5"/></svg></div><div class="nav-dot" style="background:var(--accent3)"></div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">More</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Goal Tracker</div>
+    </div>
+
+    <!-- SCREEN 6: AI CHATBOT -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
+            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:14px">🤖</div>
+            <div>
+              <div style="font-family:var(--font);font-size:13px;font-weight:800">Focus Coach</div>
+              <div style="font-size:8px;color:var(--accent3)">● Online · AI-powered</div>
+            </div>
+          </div>
+          <div style="padding:10px 0;flex:1">
+            <div class="chat-msg">
+              <div class="chat-bot" style="font-size:9px">Hey Zain! Based on your data, you've been most productive between 9–11 AM this week. Your TikTok usage is up 50% — want me to suggest a blocking schedule?</div>
+            </div>
+            <div class="chat-msg" style="text-align:right">
+              <div class="chat-user">Yes, suggest a schedule for me</div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-bot">Here's a plan based on your patterns:<br><br>📵 Block TikTok 9 AM–1 PM<br>✅ Allow 30 min during lunch<br>📵 Block again 2–6 PM<br><br>This aligns with your peak hours. Want me to apply this?</div>
+            </div>
+            <div style="display:flex;gap:6px;padding:0 14px;margin-top:4px;flex-wrap:wrap">
+              <div style="background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);border-radius:8px;padding:5px 8px;font-size:8px;color:var(--accent);font-weight:600">Apply schedule</div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:8px;color:var(--muted)">Show my patterns</div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:8px;color:var(--muted)">Suggest tasks</div>
+            </div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--border)">
+            <div style="background:var(--card);border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:8px;border:1px solid var(--border)">
+              <input style="flex:1;background:transparent;border:none;font-size:9px;color:var(--text);font-family:var(--body);outline:none" placeholder="Ask your coach..."/>
+              <div style="width:22px;height:22px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><path d="M1 9L9 5L1 1V4.2L6.5 5L1 5.8V9Z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">AI Coach</div>
+    </div>
+
+    <!-- SCREEN 7: SOCIAL -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;font-family:var(--font);font-size:16px;font-weight:800">Social</div>
+          <div class="section-row">
+            <div style="font-size:10px;font-weight:700;font-family:var(--font)">Connections</div>
+            <div style="font-size:8px;color:var(--accent);font-weight:600">+ Add Friend</div>
+          </div>
+          <div style="padding:0 14px;display:flex;gap:10px;margin-bottom:12px">
+            <div style="text-align:center">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FF6B9D,#FFB347);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin:0 auto 3px">UA</div>
+              <div style="font-size:7px;color:var(--muted)">Zain UA</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#00D4AA,#6C63FF);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin:0 auto 3px">AR</div>
+              <div style="font-size:7px;color:var(--muted)">Ali R</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#FF6B9D);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin:0 auto 3px">SK</div>
+              <div style="font-size:7px;color:var(--muted)">Sara K</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:40px;height:40px;border-radius:50%;background:var(--card);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 3px">+</div>
+              <div style="font-size:7px;color:var(--muted)">Invite</div>
+            </div>
+          </div>
+          <div class="section-row">
+            <div style="font-size:10px;font-weight:700;font-family:var(--font)">Shared Streaks</div>
+            <div style="font-size:8px;color:var(--accent);font-weight:600">+ New</div>
+          </div>
+          <div class="streak-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:20px">🔥</div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;font-family:var(--font)">Daily Journaling</div>
+                  <div style="font-size:8px;color:var(--muted)">with Zain UA</div>
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:var(--font);font-size:22px;font-weight:800;color:var(--accent4)">14</div>
+                <div style="font-size:7px;color:var(--muted)">days</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <div style="flex:1;background:rgba(0,212,170,0.2);border-radius:8px;padding:5px;text-align:center;font-size:8px;color:var(--accent3);font-weight:700">✓ You done</div>
+              <div style="flex:1;background:rgba(255,179,71,0.15);border-radius:8px;padding:5px;text-align:center;font-size:8px;color:var(--accent4)">⏳ Partner pending</div>
+            </div>
+          </div>
+          <div class="mx card-sm">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="font-size:16px">🏃</div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;font-family:var(--font)">Morning Run</div>
+                  <div style="font-size:8px;color:var(--muted)">with Ali R</div>
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:var(--font);font-size:18px;font-weight:800;color:var(--accent2)">7</div>
+                <div style="font-size:7px;color:var(--muted)">days</div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Home</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Tasks</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Diary</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Goals</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(255,107,157,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#FF6B9D" stroke-width="1.5"><circle cx="4" cy="4" r="2"/><circle cx="8" cy="4" r="2"/><path d="M1 10c0-2 1.4-3 3-3s3 1 3 3"/></svg></div><div class="nav-dot" style="background:var(--accent2)"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Social & Streaks</div>
+    </div>
+
+    <!-- SCREEN 8: GAMIFICATION -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;text-align:center">
+            <div class="avatar" style="width:48px;height:48px;font-size:16px;margin:0 auto 6px">ZA</div>
+            <div style="font-family:var(--font);font-size:14px;font-weight:800">Zain Ali</div>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:6px">
+              <div style="background:rgba(255,179,71,0.2);border-radius:99px;padding:3px 10px;font-size:9px;color:#FFB347;font-weight:700;font-family:var(--font)">⚡ Level 7</div>
+              <div style="background:rgba(108,99,255,0.2);border-radius:99px;padding:3px 10px;font-size:9px;color:var(--accent);font-weight:700">1,240 XP</div>
+            </div>
+          </div>
+          <div class="mx card-sm" style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-size:9px;color:var(--muted)">Progress to Level 8</div>
+              <div style="font-size:9px;font-weight:700;color:var(--accent4)">1240/1500 XP</div>
+            </div>
+            <div class="prog-wrap"><div class="prog-fill" style="width:83%;background:linear-gradient(90deg,var(--accent),var(--accent4))"></div></div>
+          </div>
+          <div class="section-row">
+            <div style="font-size:10px;font-weight:700;font-family:var(--font)">Achievements</div>
+            <div class="see-all">6/10 unlocked</div>
+          </div>
+          <div class="ach-grid">
+            <div class="ach"><div class="ach-icon">🌅</div><div class="ach-name">Early Bird</div></div>
+            <div class="ach"><div class="ach-icon">👑</div><div class="ach-name">Consistency</div></div>
+            <div class="ach"><div class="ach-icon">🎯</div><div class="ach-name">Goal Crusher</div></div>
+            <div class="ach"><div class="ach-icon">🧘</div><div class="ach-name">Zen Master</div></div>
+            <div class="ach"><div class="ach-icon">📖</div><div class="ach-name">Diary Keeper</div></div>
+            <div class="ach locked"><div class="ach-icon">🏆</div><div class="ach-name">Focus Champ</div></div>
+            <div class="ach locked"><div class="ach-icon">🌿</div><div class="ach-name">Detox Hero</div></div>
+            <div class="ach locked"><div class="ach-icon">🦋</div><div class="ach-name">Social +</div></div>
+            <div class="ach"><div class="ach-icon">🔥</div><div class="ach-name">Streak Master</div></div>
+          </div>
+          <div class="bottom-nav" style="margin-top:10px">
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Home</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Tasks</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Diary</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Goals</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(255,179,71,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#FFB347" stroke-width="1.5"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9.2,11 6,9.2 2.8,11 3.5,7.5 1,5 4.5,4.5"/></svg></div><div class="nav-dot" style="background:var(--accent4)"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Gamification</div>
+    </div>
+
+    <!-- SCREEN 9: AI INSIGHTS -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="background:var(--bg)">
+          <div class="status-bar"><span>9:41</span><span>▐▐▐ ◉</span></div>
+          <div style="padding:10px 14px 8px;font-family:var(--font);font-size:16px;font-weight:800">AI Insights</div>
+          <div style="padding:0 14px;margin-bottom:8px">
+            <div style="background:linear-gradient(135deg,rgba(255,107,157,0.15),rgba(255,179,71,0.1));border:1px solid rgba(255,107,157,0.3);border-radius:16px;padding:12px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <div style="font-size:14px">⚠️</div>
+                <div style="font-size:10px;font-weight:700;font-family:var(--font);color:var(--accent2)">Burnout Alert</div>
+              </div>
+              <div style="font-size:9px;color:var(--muted);line-height:1.6">3 indicators flagged: task completion dropped 35%, social media up 2.1 SDs, diary sentiment negative for 3 days.</div>
+              <div style="background:rgba(255,107,157,0.2);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:8px;color:var(--accent2);font-weight:600">💊 Recovery Plan Ready →</div>
+            </div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Peak Productivity</div>
+            <div class="insight-body">You complete 73% of tasks started between 9–11 AM. Consider scheduling high-priority work in this window.</div>
+          </div>
+          <div class="insight" style="border-color:rgba(108,99,255,0.25);background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(255,107,157,0.05))">
+            <div class="insight-title" style="color:var(--accent)">Sleep ↔ Productivity</div>
+            <div class="insight-body">Strong correlation found (r=0.71). On 8+ hour sleep days you complete 25% more tasks. Last night: 6.2 hrs.</div>
+          </div>
+          <div class="insight" style="border-color:rgba(255,179,71,0.25);background:linear-gradient(135deg,rgba(255,179,71,0.08),rgba(0,212,170,0.05))">
+            <div class="insight-title" style="color:var(--accent4)">Weekly Pattern</div>
+            <div class="insight-body">Your productivity is 40% lower on Wednesdays. YouTube usage spikes to 2.8 hours that day — consider Detox Mode.</div>
+          </div>
+          <div style="padding:0 14px;margin-top:4px">
+            <div style="background:var(--card);border-radius:12px;padding:8px 12px;font-size:9px;color:var(--muted);display:flex;align-items:center;gap:6px;border:1px solid var(--border)">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--accent3)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1 1"/></svg>
+              Next AI analysis in 8h 22m
+            </div>
+          </div>
+          <div class="bottom-nav" style="margin-top:10px">
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Home</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Tasks</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Diary</div></div>
+            <div class="nav-item"><div style="font-size:7px;color:var(--muted)">Goals</div></div>
+            <div class="nav-item active"><div class="nav-icon" style="background:rgba(0,212,170,0.2)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#00D4AA" stroke-width="1.5"><path d="M2 10V8M5 10V5M8 10V3M11 10V1"/></svg></div><div class="nav-dot" style="background:var(--accent3)"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">AI Insights</div>
+    </div>
+
+  </div>
+
+  <!-- Design System tokens at bottom -->
+  <div style="margin-top:32px;padding:20px;background:var(--surface);border-radius:16px;border:1px solid var(--border)">
+    <div style="font-family:var(--font);font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;margin-bottom:14px">DESIGN TOKENS</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">COLOR PALETTE</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div style="width:28px;height:28px;border-radius:8px;background:#6C63FF" title="Primary"></div>
+          <div style="width:28px;height:28px;border-radius:8px;background:#FF6B9D" title="Accent"></div>
+          <div style="width:28px;height:28px;border-radius:8px;background:#00D4AA" title="Success"></div>
+          <div style="width:28px;height:28px;border-radius:8px;background:#FFB347" title="Warning"></div>
+          <div style="width:28px;height:28px;border-radius:8px;background:#1C1C27" title="Card"></div>
+          <div style="width:28px;height:28px;border-radius:8px;background:#0A0A0F;border:1px solid var(--border)" title="Bg"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">TYPOGRAPHY</div>
+        <div style="font-family:var(--font);font-size:12px;font-weight:800">Syne — Headings</div>
+        <div style="font-family:var(--body);font-size:11px;color:var(--muted)">DM Sans — Body</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">RADIUS</div>
+        <div style="display:flex;gap:6px">
+          <div style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:4px"></div>
+          <div style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:10px"></div>
+          <div style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:16px"></div>
+          <div style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:50%"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600">BADGES</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <span class="badge badge-purple">High</span>
+          <span class="badge badge-green">On track</span>
+          <span class="badge badge-red">Overdue</span>
+          <span class="badge badge-amber">Behind</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showGroup(g){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
