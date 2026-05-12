@@ -19,6 +19,7 @@ const migrations = [
   require('./015_insights'),
   require('./016_achievements'),
   require('./017_user_achievements'),
+  require('./018_screentime_unique_constraints'),
 ];
 
 (async () => {
