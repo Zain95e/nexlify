@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import taskReducer from './slices/taskSlice';
 import diaryReducer from './slices/diarySlice';
 import goalReducer from './slices/goalSlice';
+import screenTimeReducer from './slices/screenTimeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     tasks: taskReducer,
     diary: diaryReducer,
     goals: goalReducer,
+    screenTime: screenTimeReducer,
   },
 });
 
