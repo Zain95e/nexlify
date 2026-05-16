@@ -7,6 +7,7 @@ const { connectDB } = require('./config/db');
 const { connectRedis } = require('./config/redis');
 const { errorHandler } = require('./middleware/errorHandler');
 const ReminderService = require('./services/reminderService');
+const GoalCronService = require('./services/goalCronService');
 
 // Routes
 const healthRouter = require('./routes/health');
@@ -16,6 +17,7 @@ const screenTimeRouter = require('./routes/screenTimeRoutes');
 const blockingRouter = require('./routes/blockingRoutes');
 const detoxRouter = require('./routes/detoxRoutes');
 const diaryRouter = require('./routes/diaryRoutes');
+const goalRouter = require('./routes/goalRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +40,7 @@ app.use('/api/screentime', screenTimeRouter);
 app.use('/api/blocking', blockingRouter);
 app.use('/api/detox', detoxRouter);
 app.use('/api/diary', diaryRouter);
+app.use('/api/goals', goalRouter);
 
 // 404 fallthrough handler
 app.use((req, res) => {
@@ -54,6 +57,7 @@ const start = async () => {
 
   // Initialize automated services
   ReminderService.init();
+  GoalCronService.init();
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Nexlify backend running on http://0.0.0.0:${PORT}`);
