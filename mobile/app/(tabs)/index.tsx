@@ -9,6 +9,9 @@ import { PremiumAppUsageChart } from '../../src/components/PremiumAppUsageChart'
 import { CategoryPieChart } from '../../src/components/CategoryPieChart';
 import { ScreenTimeLineChart } from '../../src/components/ScreenTimeLineChart';
 import { TimeFrameToggle } from '../../src/components/TimeFrameToggle';
+import ScreenTimeModule from '../../modules/screen-time/ScreenTimeModule';
+import { startDetoxSession } from '../../src/api/detoxApi';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -134,13 +137,36 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Focus Shortcuts</Text>
+          <TouchableOpacity onPress={() => router.push('/blocking' as any)}>
+            <Text style={styles.viewAll}>App Limits</Text>
+          </TouchableOpacity>
         </View>
         
-        {/* Placeholder for shortcuts */}
-        <View style={styles.placeholderCard}>
-          <Text style={styles.placeholderText}>Timer and Diary shortcuts coming soon!</Text>
+        <View style={styles.shortcutsGrid}>
+          {/* Quick Detox Button (5.3.2) */}
+          <TouchableOpacity 
+            style={[styles.shortcutBox, { backgroundColor: 'rgba(255, 0, 80, 0.1)', borderColor: 'rgba(255, 0, 80, 0.3)' }]}
+            onPress={async () => {
+              ScreenTimeModule.startDetox(30, []);
+              await startDetoxSession(30);
+              alert('Quick Detox started for 30 minutes!');
+            }}
+          >
+            <Ionicons name="flash" size={24} color="#FF0050" />
+            <Text style={[styles.shortcutText, { color: '#FF0050' }]}>Quick Detox</Text>
+            <Text style={styles.shortcutSub}>30 min block</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.shortcutBox, { backgroundColor: 'rgba(108, 99, 255, 0.1)', borderColor: 'rgba(108, 99, 255, 0.3)' }]}
+            onPress={() => router.push('/detox-config' as any)}
+          >
+            <Ionicons name="settings-outline" size={24} color={Colors.primary} />
+            <Text style={[styles.shortcutText, { color: Colors.primary }]}>Detox Config</Text>
+            <Text style={styles.shortcutSub}>Custom & Whitelist</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -346,4 +372,29 @@ const styles = StyleSheet.create({
     fontFamily: 'DM Sans',
     textAlign: 'center',
   },
+  shortcutsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 40,
+  },
+  shortcutBox: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shortcutText: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'Syne',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  shortcutSub: {
+    fontSize: 12,
+    fontFamily: 'DM Sans',
+    color: Colors.muted,
+  }
 });

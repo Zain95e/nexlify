@@ -13,6 +13,8 @@ const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const taskRouter = require('./routes/taskRoutes');
 const screenTimeRouter = require('./routes/screenTimeRoutes');
+const blockingRouter = require('./routes/blockingRoutes');
+const detoxRouter = require('./routes/detoxRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +34,8 @@ app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/tasks', taskRouter);
 app.use('/api/screentime', screenTimeRouter);
+app.use('/api/blocking', blockingRouter);
+app.use('/api/detox', detoxRouter);
 
 // 404 fallthrough handler
 app.use((req, res) => {

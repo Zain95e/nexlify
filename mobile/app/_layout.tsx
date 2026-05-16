@@ -12,6 +12,9 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { store } from '../src/store';
 import { setCredentials } from '../src/store/slices/authSlice';
+import { screenTimeEmitter } from '../modules/screen-time/ScreenTimeModule';
+import { recordAppOverride } from '../src/api/blockingApi';
+import { endDetoxSession } from '../src/api/detoxApi';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -57,6 +60,54 @@ export default function RootLayout() {
 
     checkAuth();
   }, [loaded, error]);
+
+  // Listen for native app override events and detox session events
+  useEffect(() => {
+    if (!screenTimeEmitter) return;
+
+    const overrideSub = screenTimeEmitter.addListener(
+      'onAppOverridden',
+      (event: { packageName: string }) => {
+        if (event && event.packageName) {
+          console.log('[RootLayout] App overridden:', event.packageName);
+          recordAppOverride(event.packageName);
+        }
+      }
+    );
+
+    const brokenSub = screenTimeEmitter.addListener(
+      'onDetoxBroken',
+      async () => {
+        console.log('[RootLayout] Detox broken by user');
+        const sessionId = await AsyncStorage.getItem('activeDetoxSessionId');
+        if (sessionId) {
+          await endDetoxSession(sessionId, 1);
+          await AsyncStorage.removeItem('activeDetoxSessionId');
+        }
+        // 5.2.3 Start 15-minute cooldown
+        const cooldownUntil = Date.now() + 15 * 60 * 1000;
+        await AsyncStorage.setItem('detoxCooldownUntil', String(cooldownUntil));
+      }
+    );
+
+    const finishedSub = screenTimeEmitter.addListener(
+      'onDetoxFinished',
+      async () => {
+        console.log('[RootLayout] Detox session completed');
+        const sessionId = await AsyncStorage.getItem('activeDetoxSessionId');
+        if (sessionId) {
+          await endDetoxSession(sessionId, 0);
+          await AsyncStorage.removeItem('activeDetoxSessionId');
+        }
+      }
+    );
+
+    return () => {
+      overrideSub.remove();
+      brokenSub.remove();
+      finishedSub.remove();
+    };
+  }, []);
 
   if (!loaded && !error) {
     return null;
