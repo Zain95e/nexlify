@@ -18,6 +18,7 @@ const blockingRouter = require('./routes/blockingRoutes');
 const detoxRouter = require('./routes/detoxRoutes');
 const diaryRouter = require('./routes/diaryRoutes');
 const goalRouter = require('./routes/goalRoutes');
+const pomodoroRouter = require('./routes/pomodoroRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ app.use('/api/blocking', blockingRouter);
 app.use('/api/detox', detoxRouter);
 app.use('/api/diary', diaryRouter);
 app.use('/api/goals', goalRouter);
+app.use('/api/pomodoro', pomodoroRouter);
 
 // 404 fallthrough handler
 app.use((req, res) => {

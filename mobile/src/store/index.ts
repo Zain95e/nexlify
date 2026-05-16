@@ -4,6 +4,7 @@ import taskReducer from './slices/taskSlice';
 import diaryReducer from './slices/diarySlice';
 import goalReducer from './slices/goalSlice';
 import screenTimeReducer from './slices/screenTimeSlice';
+import pomodoroReducer from './slices/pomodoroSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     diary: diaryReducer,
     goals: goalReducer,
     screenTime: screenTimeReducer,
+    pomodoro: pomodoroReducer,
   },
 });
 
