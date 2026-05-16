@@ -1,4 +1,9 @@
 from fastapi import FastAPI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from routes.transcribe import router as transcribe_router
 
 app = FastAPI(
     title="Nexlify AI Service",
@@ -15,3 +20,5 @@ def root():
 @app.get("/health", tags=["Health"])
 def health():
     return {"status": "ok"}
+
+app.include_router(transcribe_router)
