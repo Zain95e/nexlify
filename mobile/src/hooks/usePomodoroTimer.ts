@@ -2,10 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { tick, completeSession } from '../store/slices/pomodoroSlice';
-// @ts-ignore
 import KeepAwake from 'react-native-keep-awake';
 import { NativeModules, Platform } from 'react-native';
-// @ts-ignore
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import api from '../api';
 

@@ -14,6 +14,7 @@ router.post('/', diaryController.createEntry);
 router.post('/transcribe', upload.single('file'), diaryController.transcribeAudio);
 router.get('/', diaryController.getEntries);
 router.get('/search', diaryController.searchEntries);
+router.get('/:id', diaryController.getEntryById);
 router.patch('/:id', diaryController.updateEntry);
 router.delete('/:id', diaryController.deleteEntry);
 

@@ -1,7 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// ⚠️  Android emulator uses 10.0.2.2 to reach the host machine.
+// Physical Pixel 7: replace with your PC's LAN IP, e.g. http://192.168.1.x:5000/api
+const API_BASE_URL = 'http://10.0.2.2:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -70,6 +70,30 @@ const diaryController = {
     }
   },
 
+  // GET /api/diary/:id — returns full content (not truncated preview)
+  async getEntryById(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      const result = await pool.query(
+        'SELECT * FROM diary_entries WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
+
+      if (result.rowCount === 0) {
+        return next(createError(404, 'Diary entry not found'));
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: result.rows[0]
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // 6.1.3 GET /api/diary/search?q=keyword
   async searchEntries(req, res, next) {
     try {
@@ -180,17 +204,28 @@ const diaryController = {
 
   // 6.2.1 POST /api/diary/transcribe
   async transcribeAudio(req, res, next) {
-    try {
-      if (!req.file) {
-        return next(createError(400, 'Audio file is required'));
-      }
+    if (!req.file) {
+      return next(createError(400, 'Audio file is required'));
+    }
 
+    const fs = require('fs');
+    const filePath = req.file.path;
+
+    // Helper: always remove the temp file, even on error
+    const cleanupFile = () => {
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('[transcribeAudio] Failed to clean up temp file:', err.message);
+        });
+      }
+    };
+
+    try {
       const FormData = require('form-data');
       const axios = require('axios');
-      const fs = require('fs');
 
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(req.file.path), {
+      formData.append('file', fs.createReadStream(filePath), {
         filename: req.file.originalname || 'audio.wav',
         contentType: req.file.mimetype || 'audio/wav',
       });
@@ -205,20 +240,15 @@ const diaryController = {
         },
       });
 
-      fs.unlinkSync(req.file.path);
-
       res.status(200).json({
         status: 'success',
-        data: {
-          text: response.data.text
-        }
+        data: { text: response.data.text }
       });
     } catch (error) {
-      if (req.file && require('fs').existsSync(req.file.path)) {
-        require('fs').unlinkSync(req.file.path);
-      }
       console.error('Transcription error:', error.response?.data || error.message);
       next(createError(500, "Couldn't transcribe audio. Please type instead."));
+    } finally {
+      cleanupFile(); // Always runs — no more file leaks
     }
   }
 };

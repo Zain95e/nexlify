@@ -30,6 +30,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="checklist" color={color} />,
         }}
       />
+      {/* explore tab hidden — stock Expo placeholder, not part of Nexlify */}
+      <Tabs.Screen
+        name="explore"
+        options={{ href: null }}
+      />
       <Tabs.Screen
         name="diary"
         options={{

@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { createError } = require('../middleware/errorHandler');
+const PointsService = require('../services/pointsService');
 
 // Utility functions for dates
 const getDaysDiff = (start, end) => {
@@ -200,6 +201,11 @@ const goalController = {
       `, [newCurrentCount, isCompleted, goalId]);
 
       await client.query('COMMIT');
+
+      // Award +100 pts when goal is completed for the first time
+      if (isCompleted && !goal.is_completed) {
+        await PointsService.addPoints(userId, 100);
+      }
 
       res.status(200).json({
         status: 'success',

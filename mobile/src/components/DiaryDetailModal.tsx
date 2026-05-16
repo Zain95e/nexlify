@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import api from '../api';
@@ -34,33 +34,27 @@ const getMoodEmoji = (mood: string) => {
 export const DiaryDetailModal: React.FC<DiaryDetailModalProps> = ({ visible, entry, onClose, onDelete, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-
-  // When modal opens or entry changes, reset edit state
-  React.useEffect(() => {
-    if (visible && entry) {
-      setIsEditing(false);
-      setEditedContent(entry.content || entry.preview || ''); // In our implementation we only returned preview in list, but let's assume we can edit what we have, ideally we'd fetch full content if it was truncated. 
-      // Actually, Phase 6 spec says GET /api/diary returns preview, so we might need to fetch full content?
-      // Wait, let's just use what we have, or if we need to fetch full content we can do that here.
-    }
-  }, [visible, entry]);
-
   const [fullContent, setFullContent] = useState('');
   const [loadingContent, setLoadingContent] = useState(false);
 
-  React.useEffect(() => {
-    if (visible && entry && !isEditing) {
-      // In a real scenario, we might want to fetch full content if preview is truncated.
-      // But the api only has GET /api/diary (paginated list). There is no GET /api/diary/:id specified in Phase 6.
-      // So perhaps the list was supposed to return full content, or preview is all we have for now.
-      // Actually, looking at 6.1.2: SELECT ... LEFT(content, 200) as preview.
-      // I will assume we can't easily fetch full content without an endpoint, unless I add it to the backend.
-      // Since Phase 6.1 didn't specify GET /api/diary/:id, I'll just use the preview as content for now, or assume the user will just edit what they see. Wait, we should add GET /api/diary/:id if it's missing, but I am asked to "execute till 6.1.4-6.1.5", and I shouldn't go beyond or invent.
-      // Let's just use entry.preview for now, or assume I can fetch if I need to.
-      setFullContent(entry.content || entry.preview);
-      setEditedContent(entry.content || entry.preview);
-    }
-  }, [visible, entry]);
+  // Fetch full content whenever modal opens with a valid entry
+  useEffect(() => {
+    if (!visible || !entry) return;
+    setIsEditing(false);
+    setLoadingContent(true);
+    api.get(`/diary/${entry.id}`)
+      .then(res => {
+        const content = res.data?.data?.content ?? entry.preview ?? '';
+        setFullContent(content);
+        setEditedContent(content);
+      })
+      .catch(() => {
+        // Fallback to preview if fetch fails
+        setFullContent(entry.preview ?? '');
+        setEditedContent(entry.preview ?? '');
+      })
+      .finally(() => setLoadingContent(false));
+  }, [visible, entry?.id]);
 
 
   if (!entry) return null;
@@ -151,6 +145,8 @@ export const DiaryDetailModal: React.FC<DiaryDetailModalProps> = ({ visible, ent
                 onChangeText={setEditedContent}
                 autoFocus
               />
+            ) : loadingContent ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
             ) : (
               <Text style={styles.bodyText}>{fullContent}</Text>
             )}

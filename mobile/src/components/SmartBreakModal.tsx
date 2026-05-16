@@ -89,11 +89,10 @@ export const SmartBreakModal: React.FC<SmartBreakModalProps> = ({
   const [mood, setMood] = useState<string>('neutral');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
-  const [countdown, setCountdown] = useState(breakDurationSeconds);
   const [loading, setLoading] = useState(true);
 
+  // Pulse animation — purely cosmetic, does NOT drive a timer
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const intervalRef = useRef<any>(null);
 
   // Pulse animation for the countdown circle
   useEffect(() => {
@@ -108,21 +107,11 @@ export const SmartBreakModal: React.FC<SmartBreakModalProps> = ({
     return () => pulse.stop();
   }, [visible]);
 
-  // Auto-countdown (display only — doesn't control the Redux timer)
-  useEffect(() => {
-    if (!visible) return;
-    setCountdown(breakDurationSeconds);
-    intervalRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
-  }, [visible, breakDurationSeconds]);
+  // ── No auto-countdown here ──────────────────────────────────────────────────
+  // The Redux break timer is the single source of truth.
+  // Showing a drifting visual countdown that started before the user
+  // pressed "Start Break" would desync from the actual break duration.
+  // Instead we display the break duration as a static label.
 
   // Fetch latest mood on open
   useEffect(() => {
@@ -148,10 +137,9 @@ export const SmartBreakModal: React.FC<SmartBreakModalProps> = ({
     setActiveSuggestionIndex(prev => (prev + 1) % suggestions.length);
   };
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+  const formatDuration = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    return `${m} min`;
   };
 
   const breakLabel = isLongBreak ? 'Long Break' : 'Short Break';
@@ -170,8 +158,8 @@ export const SmartBreakModal: React.FC<SmartBreakModalProps> = ({
 
         {/* Countdown Ring */}
         <Animated.View style={[styles.ring, { transform: [{ scale: pulseAnim }], borderColor: breakColor }]}>
-          <Text style={styles.countdownTime}>{formatTime(countdown)}</Text>
-          <Text style={styles.countdownLabel}>remaining</Text>
+          <Text style={styles.countdownTime}>{formatDuration(breakDurationSeconds)}</Text>
+          <Text style={styles.countdownLabel}>break duration</Text>
         </Animated.View>
 
         {/* Mood Label */}
