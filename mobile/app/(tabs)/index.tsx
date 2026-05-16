@@ -12,6 +12,7 @@ import { TimeFrameToggle } from '../../src/components/TimeFrameToggle';
 import ScreenTimeModule from '../../modules/screen-time/ScreenTimeModule';
 import { startDetoxSession } from '../../src/api/detoxApi';
 import { router } from 'expo-router';
+import { TodaysFocusCard } from '../../src/components/TodaysFocusCard';
 
 export default function HomeScreen() {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -136,6 +137,9 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>0</Text>
           </View>
         </View>
+
+        {/* Today's Focus — Pomodoro stats card (8.3) */}
+        <TodaysFocusCard />
 
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Focus Shortcuts</Text>

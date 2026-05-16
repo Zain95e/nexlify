@@ -44,6 +44,25 @@ const pomodoroController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  // GET /api/pomodoro/today → today's completed sessions + total minutes
+  async getTodayStats(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const query = `
+        SELECT
+          COUNT(*) FILTER (WHERE was_completed = true)::int  AS count,
+          COALESCE(SUM(duration_minutes) FILTER (WHERE was_completed = true), 0)::int AS total_minutes
+        FROM pomodoro_sessions
+        WHERE user_id = $1
+          AND start_time::date = CURRENT_DATE
+      `;
+      const result = await pool.query(query, [userId]);
+      res.status(200).json({ status: 'success', data: result.rows[0] });
+    } catch (error) {
+      next(error);
+    }
   }
 };
 

@@ -45,6 +45,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="pomodoro"
+        options={{
+          title: 'Focus',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="timer" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'More',

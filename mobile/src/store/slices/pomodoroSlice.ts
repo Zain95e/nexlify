@@ -9,6 +9,7 @@ interface PomodoroState {
   phase: PomodoroPhase;
   focusDuration: number;
   breakDuration: number;
+  showBreakSuggestions: boolean;
 }
 
 const DEFAULT_FOCUS_DURATION = 25 * 60; // 25 minutes in seconds
@@ -21,6 +22,7 @@ const initialState: PomodoroState = {
   phase: 'focus',
   focusDuration: DEFAULT_FOCUS_DURATION,
   breakDuration: DEFAULT_BREAK_DURATION,
+  showBreakSuggestions: false,
 };
 
 const pomodoroSlice = createSlice({
@@ -45,23 +47,29 @@ const pomodoroSlice = createSlice({
     },
     completeSession(state) {
       if (state.phase === 'focus') {
-        // Just finished focus, go to break
+        // Show smart break suggestion screen before starting break
+        state.showBreakSuggestions = true;
         state.phase = 'break';
         state.timeRemaining = state.breakDuration;
         state.isRunning = false;
       } else {
         // Just finished break, go back to focus
+        state.showBreakSuggestions = false;
         state.phase = 'focus';
         state.sessionNumber += 1;
         state.timeRemaining = state.focusDuration;
         state.isRunning = false;
       }
     },
+    dismissBreakSuggestions(state) {
+      state.showBreakSuggestions = false;
+    },
     resetTimer(state) {
       state.isRunning = false;
       state.phase = 'focus';
       state.sessionNumber = 1;
       state.timeRemaining = state.focusDuration;
+      state.showBreakSuggestions = false;
     },
     setDurations(state, action: PayloadAction<{ focus: number; break: number }>) {
       state.focusDuration = action.payload.focus;
@@ -81,6 +89,7 @@ export const {
   completeSession,
   resetTimer,
   setDurations,
+  dismissBreakSuggestions,
 } = pomodoroSlice.actions;
 
 export default pomodoroSlice.reducer;
