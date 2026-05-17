@@ -114,4 +114,27 @@ class UsageStatsHelper(private val context: Context) {
     results.sortByDescending { it["duration_minutes"] as Int }
     return results
   }
+
+  /**
+   * Checks if the app has the PACKAGE_USAGE_STATS permission.
+   */
+  fun hasUsageStatsPermission(): Boolean {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager
+      ?: return false
+    val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      appOps.unsafeCheckOpNoThrow(
+        android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+        android.os.Process.myUid(),
+        context.packageName
+      )
+    } else {
+      @Suppress("DEPRECATION")
+      appOps.checkOpNoThrow(
+        android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+        android.os.Process.myUid(),
+        context.packageName
+      )
+    }
+    return mode == android.app.AppOpsManager.MODE_ALLOWED
+  }
 }

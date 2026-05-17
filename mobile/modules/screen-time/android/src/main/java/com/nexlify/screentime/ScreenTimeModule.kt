@@ -118,7 +118,7 @@ class ScreenTimeModule : Module() {
 
     Function("stopDetox") {
       DetoxManager.isDetoxActive = false
-      val ctx: Context = appContext.reactContext ?: return@Function
+      val ctx: Context = appContext.reactContext ?: return@Function Unit
       val intent = Intent(ctx, DetoxService::class.java)
       ctx.stopService(intent)
     }
@@ -130,7 +130,7 @@ class ScreenTimeModule : Module() {
     }
 
     Function("requestUsagePermission") {
-      val ctx: Context = appContext.reactContext ?: return@Function
+      val ctx: Context = appContext.reactContext ?: return@Function Unit
       val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       ctx.startActivity(intent)
@@ -167,7 +167,7 @@ class ScreenTimeModule : Module() {
     }
 
     Function("requestAccessibilityPermission") {
-      val ctx: Context = appContext.reactContext ?: return@Function
+      val ctx: Context = appContext.reactContext ?: return@Function Unit
       val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       ctx.startActivity(intent)
