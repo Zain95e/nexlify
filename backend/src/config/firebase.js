@@ -9,7 +9,13 @@ const firebaseConfig = {
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
 
-if (firebaseConfig.projectId && firebaseConfig.privateKey && firebaseConfig.clientEmail) {
+const isPlaceholder = (val) => !val || val.includes('your-') || val.includes('_HERE');
+
+if (
+  firebaseConfig.projectId && !isPlaceholder(firebaseConfig.projectId) &&
+  firebaseConfig.privateKey && !isPlaceholder(firebaseConfig.privateKey) &&
+  firebaseConfig.clientEmail && !isPlaceholder(firebaseConfig.clientEmail)
+) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert(firebaseConfig),
@@ -19,7 +25,7 @@ if (firebaseConfig.projectId && firebaseConfig.privateKey && firebaseConfig.clie
     console.error('[Firebase] Initialization error:', error.message);
   }
 } else {
-  console.warn('[Firebase] Missing credentials in .env. Push notifications will be disabled.');
+  console.warn('[Firebase] Missing or placeholder credentials in .env. Push notifications will be disabled.');
 }
 
 module.exports = admin;

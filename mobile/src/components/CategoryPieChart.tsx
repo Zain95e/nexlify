@@ -3,11 +3,31 @@ import { View, Text, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { Colors } from '../theme';
 
-export const CategoryPieChart = () => {
-  const pieData = [
-    { value: 45, color: Colors.primary, text: '45%', label: 'Social' },
-    { value: 30, color: Colors.tertiary, text: '30%', label: 'Work' },
-    { value: 25, color: Colors.secondary, text: '25%', label: 'Fun' },
+interface Props {
+  data?: {
+    social?: number;
+    productivity?: number;
+    entertainment?: number;
+    other?: number;
+  };
+}
+
+export const CategoryPieChart: React.FC<Props> = ({ data }) => {
+  const social = data?.social || 0;
+  const productivity = data?.productivity || 0;
+  const entertainment = data?.entertainment || 0;
+  const other = data?.other || 0;
+  const total = social + productivity + entertainment + other;
+
+  const pieData = total > 0 ? [
+    { value: Math.round((social / total) * 100), color: Colors.primary, label: 'Social' },
+    { value: Math.round((productivity / total) * 100), color: Colors.tertiary, label: 'Productivity' },
+    { value: Math.round((entertainment / total) * 100), color: Colors.secondary, label: 'Entertainment' },
+    { value: Math.round((other / total) * 100), color: Colors.warning, label: 'Other' },
+  ].filter(item => item.value > 0) : [
+    { value: 45, color: Colors.primary, label: 'Social' },
+    { value: 30, color: Colors.tertiary, label: 'Productivity' },
+    { value: 25, color: Colors.secondary, label: 'Entertainment' },
   ];
 
   return (
@@ -72,7 +92,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.muted,
     fontFamily: 'DM Sans',
-    width: 60,
+    width: 90,
   },
   legendValue: {
     fontSize: 12,

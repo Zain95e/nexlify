@@ -21,10 +21,42 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [timeFrame, setTimeFrame] = useState<'day' | 'week' | 'month'>('day');
 
+  // Real screen time data states
+  const [dailyUsage, setDailyUsage] = useState<any>(null);
+  const [weeklyUsage, setWeeklyUsage] = useState<any[]>([]);
+  const [monthlyUsage, setMonthlyUsage] = useState<any[]>([]);
+  const [appLimits, setAppLimits] = useState<any[]>([]);
+
   const fetchStats = async () => {
     try {
-      const response = await api.get('/tasks/stats');
-      setStats(response.data.data);
+      // 1. Sync native screen time statistics to the backend if on Android and permission is granted
+      try {
+        const hasPermission = ScreenTimeModule.hasUsagePermission();
+        if (hasPermission) {
+          const rawStats = await ScreenTimeModule.getUsageStats();
+          if (rawStats && rawStats.length > 0) {
+            await api.post('/screentime', { records: rawStats });
+            console.log('[HomeScreen] Synced native screen time stats with backend');
+          }
+        }
+      } catch (err) {
+        console.warn('[HomeScreen] Native stats sync failed:', err);
+      }
+
+      // 2. Fetch all synchronized statistics from backend
+      const [dailyRes, weeklyRes, monthlyRes, limitsRes, statsRes] = await Promise.all([
+        api.get('/screentime/daily').catch(() => null),
+        api.get('/screentime/weekly').catch(() => null),
+        api.get('/screentime/monthly').catch(() => null),
+        api.get('/screentime/limits').catch(() => null),
+        api.get('/tasks/stats').catch(() => null),
+      ]);
+
+      if (dailyRes?.data?.success) setDailyUsage(dailyRes.data.data);
+      if (weeklyRes?.data?.success) setWeeklyUsage(weeklyRes.data.data);
+      if (monthlyRes?.data?.success) setMonthlyUsage(monthlyRes.data.data);
+      if (limitsRes?.data?.success) setAppLimits(limitsRes.data.data);
+      if (statsRes?.data?.success) setStats(statsRes.data.data);
     } catch (error) {
       console.error('Fetch stats error:', error);
     } finally {
@@ -42,13 +74,86 @@ export default function HomeScreen() {
     fetchStats();
   };
 
-  const dummyAppUsage = [
-    { name: 'Instagram', duration: '1h 12m', percentage: 85, color: Colors.secondary },
-    { name: 'WhatsApp', duration: '45m', percentage: 60, color: Colors.tertiary },
-    { name: 'YouTube', duration: '32m', percentage: 45, color: Colors.warning },
-    { name: 'LinkedIn', duration: '12m', percentage: 20, color: Colors.primary },
-    { name: 'TikTok', duration: '8m', percentage: 15, color: '#FF0050' },
-  ];
+  const formatDuration = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  const getScreenTimeValue = () => {
+    if (timeFrame === 'day') {
+      return formatDuration(dailyUsage?.total_minutes || 0);
+    } else if (timeFrame === 'week') {
+      const totalMins = weeklyUsage.reduce((sum, d) => sum + (d.total_minutes || 0), 0);
+      return formatDuration(totalMins);
+    } else {
+      const totalMins = monthlyUsage.reduce((sum, d) => sum + (d.total_minutes || 0), 0);
+      return formatDuration(totalMins);
+    }
+  };
+
+  const getTrendText = () => {
+    if (timeFrame === 'day') {
+      return 'based on active daily usage';
+    } else if (timeFrame === 'week') {
+      return 'past 7 days aggregated';
+    } else {
+      return 'past 30 days total';
+    }
+  };
+
+  const getAppChartData = () => {
+    if (!dailyUsage?.apps || dailyUsage.apps.length === 0) return undefined;
+    return dailyUsage.apps.slice(0, 5).map((app: any) => {
+      const limitRecord = appLimits.find((l: any) => l.app_package === app.app_package);
+      return {
+        value: app.duration_minutes,
+        label: app.app_name.length > 5 ? `${app.app_name.slice(0, 4)}.` : app.app_name,
+        limit: limitRecord ? limitRecord.daily_limit_minutes : undefined,
+      };
+    });
+  };
+
+  const getCategoryData = () => {
+    if (timeFrame === 'day') {
+      if (!dailyUsage?.apps || dailyUsage.apps.length === 0) return undefined;
+      const cats = { social: 0, productivity: 0, entertainment: 0, other: 0 };
+      let totalMins = 0;
+      dailyUsage.apps.forEach((app: any) => {
+        const cat = app.category || 'other';
+        if (cats.hasOwnProperty(cat)) {
+          (cats as any)[cat] += app.duration_minutes;
+          totalMins += app.duration_minutes;
+        }
+      });
+      return totalMins > 0 ? cats : undefined;
+    } else if (timeFrame === 'week') {
+      if (!weeklyUsage || weeklyUsage.length === 0) return undefined;
+      const cats = { social: 0, productivity: 0, entertainment: 0, other: 0 };
+      let totalMins = 0;
+      weeklyUsage.forEach((day: any) => {
+        cats.social += day.social || 0;
+        cats.productivity += day.productivity || 0;
+        cats.entertainment += day.entertainment || 0;
+        cats.other += day.other || 0;
+        totalMins += (day.social || 0) + (day.productivity || 0) + (day.entertainment || 0) + (day.other || 0);
+      });
+      return totalMins > 0 ? cats : undefined;
+    }
+    return undefined;
+  };
+
+  const getLineChartData = () => {
+    if (timeFrame === 'week') {
+      return weeklyUsage.map((day: any) => ({
+        date: day.date,
+        total_minutes: day.total_minutes,
+      }));
+    } else if (timeFrame === 'month') {
+      return monthlyUsage;
+    }
+    return undefined;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,10 +166,10 @@ export default function HomeScreen() {
         {/* Screen Time Header (3.3.1) */}
         <View style={styles.screenTimeHeader}>
           <Text style={styles.screenTimeLabel}>Today's Screen Time</Text>
-          <Text style={styles.screenTimeValue}>{timeFrame === 'day' ? '3h 42m' : timeFrame === 'week' ? '24h 15m' : '92h 40m'}</Text>
+          <Text style={styles.screenTimeValue}>{getScreenTimeValue()}</Text>
           <View style={styles.trendRow}>
             <Ionicons name="trending-down" size={14} color={Colors.success} />
-            <Text style={styles.trendText}>12% less than last {timeFrame}</Text>
+            <Text style={styles.trendText}>{getTrendText()}</Text>
           </View>
         </View>
 
@@ -80,19 +185,40 @@ export default function HomeScreen() {
               <Text style={styles.viewAll}>Details</Text>
             </TouchableOpacity>
           </View>
-          <PremiumAppUsageChart />
+          {getAppChartData() ? (
+            <PremiumAppUsageChart data={getAppChartData()} />
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="bar-chart-outline" size={32} color={Colors.muted} />
+              <Text style={styles.emptyStateText}>No app usage recorded yet</Text>
+            </View>
+          )}
         </View>
 
         {/* Category Pie Chart (3.3.3) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Categories</Text>
-          <CategoryPieChart />
+          {getCategoryData() ? (
+            <CategoryPieChart data={getCategoryData()} />
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="pie-chart-outline" size={32} color={Colors.muted} />
+              <Text style={styles.emptyStateText}>No categories to display</Text>
+            </View>
+          )}
         </View>
 
         {/* Monthly Trend (3.3.4) */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>30-Day Trend</Text>
-          <ScreenTimeLineChart />
+          <Text style={styles.sectionTitle}>{timeFrame === 'month' ? '30-Day Trend' : '7-Day Trend'}</Text>
+          {getLineChartData() && getLineChartData()!.length > 0 ? (
+            <ScreenTimeLineChart data={getLineChartData()} />
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="trending-up-outline" size={32} color={Colors.muted} />
+              <Text style={styles.emptyStateText}>No trend data available yet</Text>
+            </View>
+          )}
         </View>
 
         {/* Weekly Summary Card (4.2.6) */}
@@ -400,5 +526,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'DM Sans',
     color: Colors.muted,
+  },
+  emptyStateContainer: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: Colors.muted,
+    fontFamily: 'DM Sans',
+    textAlign: 'center',
+    marginTop: 12,
   }
 });
