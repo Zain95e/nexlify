@@ -10,6 +10,22 @@ import api from '../api';
 
 const { PomodoroModule } = NativeModules;
 
+const safeActivateKeepAwake = async () => {
+  try {
+    await activateKeepAwakeAsync();
+  } catch (err) {
+    console.warn('[KeepAwake] Failed to activate:', err);
+  }
+};
+
+const safeDeactivateKeepAwake = () => {
+  try {
+    deactivateKeepAwake();
+  } catch (err) {
+    console.warn('[KeepAwake] Failed to deactivate:', err);
+  }
+};
+
 export const usePomodoroTimer = () => {
   const dispatch = useDispatch();
   const { isRunning, timeRemaining, phase, sessionNumber, focusDuration } = useSelector((state: RootState) => state.pomodoro);
@@ -55,7 +71,7 @@ export const usePomodoroTimer = () => {
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
       if (phase === 'focus') {
-        activateKeepAwakeAsync();
+        safeActivateKeepAwake();
         if (!startTimeRef.current) {
           startTimeRef.current = new Date().toISOString();
         }
@@ -71,7 +87,7 @@ export const usePomodoroTimer = () => {
           });
         }
       } else {
-        deactivateKeepAwake();
+        safeDeactivateKeepAwake();
         if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
           blockingActiveRef.current = false;
           PomodoroModule.clearBlockedApps();
@@ -83,7 +99,7 @@ export const usePomodoroTimer = () => {
       }, 1000);
     } else if (isRunning && timeRemaining === 0) {
       // Time is up
-      deactivateKeepAwake();
+      safeDeactivateKeepAwake();
       if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
         blockingActiveRef.current = false;
         PomodoroModule.clearBlockedApps();
@@ -104,7 +120,7 @@ export const usePomodoroTimer = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     } else {
       // Paused or stopped manually
-      deactivateKeepAwake();
+      safeDeactivateKeepAwake();
       if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
         blockingActiveRef.current = false;
         PomodoroModule.clearBlockedApps();
@@ -114,7 +130,7 @@ export const usePomodoroTimer = () => {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      deactivateKeepAwake();
+      safeDeactivateKeepAwake();
     };
   }, [isRunning, timeRemaining, phase, dispatch]);
 };

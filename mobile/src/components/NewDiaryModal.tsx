@@ -29,7 +29,21 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [metering, setMetering] = useState<number>(-160);
+  const [animationTick, setAnimationTick] = useState(0);
   const recordingRef = useRef<Audio.Recording | null>(null);
+
+  // Smooth wave animation loop
+  useEffect(() => {
+    let animId: any;
+    if (isRecording) {
+      animId = setInterval(() => {
+        setAnimationTick(prev => prev + 1);
+      }, 50); // silky smooth 20 FPS
+    }
+    return () => {
+      if (animId) clearInterval(animId);
+    };
+  }, [isRecording]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -51,39 +65,40 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      const { recording } = await Audio.Recording.createAsync({
-        isMeteringEnabled: true,
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-          audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 64000,
+      const { recording } = await Audio.Recording.createAsync(
+        {
+          isMeteringEnabled: true,
+          android: {
+            extension: '.m4a',
+            outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+            audioEncoder: Audio.AndroidAudioEncoder.AAC,
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 64000,
+          },
+          ios: {
+            extension: '.m4a',
+            outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+            audioQuality: Audio.IOSAudioQuality.LOW,
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 64000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false,
+          },
+          web: {
+            mimeType: 'audio/webm',
+            bitsPerSecond: 64000,
+          },
         },
-        ios: {
-          extension: '.m4a',
-          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-          audioQuality: Audio.IOSAudioQuality.LOW,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 64000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
+        (status) => {
+          if (status.metering !== undefined) {
+            setMetering(status.metering);
+          }
         },
-        web: {
-          mimeType: 'audio/webm',
-          bitsPerSecond: 64000,
-        },
-      });
-
-      recording.setOnRecordingStatusUpdate((status) => {
-        if (status.metering !== undefined) {
-          setMetering(status.metering);
-        }
-      });
-      await recording.setProgressUpdateInterval(100);
+        100
+      );
 
       recordingRef.current = recording;
       setIsRecording(true);
@@ -160,12 +175,13 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
 
   const getBarHeight = (index: number) => {
     if (!isRecording) return 4;
-    // Map metering from [-160, 0] to normalized percentage [0.1, 1.0]
-    const normalized = Math.max(0.1, (metering + 160) / 160);
-    // Dynamic organic equalizer effect combining voice amplitude and wave phase
-    const phase = (Date.now() / 150) + index * 0.4;
-    const wave = Math.sin(phase) * 0.3 + 0.7;
-    return Math.min(32, Math.max(4, normalized * 32 * wave));
+    // Map metering from [-160, 0] to normalized percentage [0.15, 1.0]
+    const normalized = Math.max(0.15, (metering + 160) / 160);
+    // Multi-phase sine waves for beautiful, natural rippling fluid wave movement
+    const t = Date.now() / 120;
+    const wave = Math.sin(t + index * 0.5) * 0.4 + 0.6;
+    const noise = Math.cos(t * 1.5 - index * 0.3) * 0.15;
+    return Math.min(32, Math.max(6, (normalized * 24 + 6) * (wave + noise)));
   };
 
   return (
@@ -195,6 +211,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
             style={styles.textInput}
             multiline
             placeholder="How are you feeling today?"
+            placeholderTextColor={Colors.muted}
             value={content}
             onChangeText={setContent}
             textAlignVertical="top"
@@ -205,6 +222,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
             <TextInput
               style={styles.tagInput}
               placeholder="Add tags (press Enter or space)"
+              placeholderTextColor={Colors.muted}
               value={tagInput}
               onChangeText={(text) => {
                 if (text.endsWith(' ') || text.endsWith(',')) {
