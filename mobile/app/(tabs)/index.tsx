@@ -26,12 +26,14 @@ export default function HomeScreen() {
   const [weeklyUsage, setWeeklyUsage] = useState<any[]>([]);
   const [monthlyUsage, setMonthlyUsage] = useState<any[]>([]);
   const [appLimits, setAppLimits] = useState<any[]>([]);
+  const [hasUsagePermission, setHasUsagePermission] = useState(true);
 
   const fetchStats = async () => {
     try {
       // 1. Sync native screen time statistics to the backend if on Android and permission is granted
       try {
         const hasPermission = ScreenTimeModule.hasUsagePermission();
+        setHasUsagePermission(hasPermission);
         if (hasPermission) {
           const rawStats = await ScreenTimeModule.getUsageStats();
           if (rawStats && rawStats.length > 0) {
@@ -176,6 +178,27 @@ export default function HomeScreen() {
         <View style={{ marginBottom: 24 }}>
           <TimeFrameToggle value={timeFrame} onChange={setTimeFrame} />
         </View>
+
+        {!hasUsagePermission && (
+          <View style={styles.permissionCard}>
+            <View style={styles.permissionHeader}>
+              <Ionicons name="shield-checkmark-outline" size={24} color={Colors.warning} />
+              <Text style={styles.permissionTitle}>Usage Stats Access Required</Text>
+            </View>
+            <Text style={styles.permissionText}>
+              To display and sync your screen time statistics, please enable Usage Access in your Android System Settings.
+            </Text>
+            <TouchableOpacity 
+              style={styles.permissionBtn}
+              onPress={() => {
+                ScreenTimeModule.requestUsagePermission();
+              }}
+            >
+              <Text style={styles.permissionBtnText}>Grant Permission</Text>
+              <Ionicons name="open-outline" size={16} color="#FFF" style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* App Usage Chart (3.3.2) */}
         <View style={styles.sectionCard}>
@@ -544,5 +567,48 @@ const styles = StyleSheet.create({
     fontFamily: 'DM Sans',
     textAlign: 'center',
     marginTop: 12,
-  }
+  },
+  permissionCard: {
+    backgroundColor: 'rgba(255, 179, 71, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 71, 0.3)',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  permissionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  permissionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Syne',
+    color: Colors.warning,
+    marginLeft: 8,
+  },
+  permissionText: {
+    fontSize: 13,
+    color: Colors.muted,
+    fontFamily: 'DM Sans',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  permissionBtn: {
+    flexDirection: 'row',
+    backgroundColor: Colors.warning,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionBtnText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'Syne',
+  },
 });

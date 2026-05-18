@@ -6,7 +6,7 @@ const diaryController = {
   // 6.1.1 POST /api/diary
   async createEntry(req, res, next) {
     try {
-      const { content, mood, tags } = req.body;
+      const { content, mood, tags, date } = req.body;
       const userId = req.user.id;
 
       if (!content || content.trim() === '') {
@@ -18,13 +18,16 @@ const diaryController = {
         return next(createError(400, 'Invalid mood'));
       }
 
+      // If a custom date is provided, parse it, otherwise default to NOW()
+      const createdAt = date ? new Date(date) : new Date();
+
       const query = `
         INSERT INTO diary_entries (user_id, content, mood, tags, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, NOW())
         RETURNING *;
       `;
       
-      const result = await pool.query(query, [userId, content, mood, tags || []]);
+      const result = await pool.query(query, [userId, content, mood, tags || [], createdAt]);
       const entry = result.rows[0];
 
       // Award +5 pts
@@ -238,6 +241,7 @@ const diaryController = {
           ...formData.getHeaders(),
           'x-internal-secret': aiSecret,
         },
+        timeout: 60000, // 60s timeout to allow local Whisper model execution to complete
       });
 
       res.status(200).json({

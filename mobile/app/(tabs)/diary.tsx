@@ -41,6 +41,7 @@ export default function DiaryScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const fetchEntries = useCallback(async (query: string = '') => {
     setLoading(true);
@@ -80,6 +81,15 @@ export default function DiaryScreen() {
     fetchEntries();
   };
 
+  const filteredEntries = React.useMemo(() => {
+    return entries.filter(entry => {
+      const entryDate = new Date(entry.created_at).toISOString().split('T')[0];
+      return entryDate === selectedDate;
+    });
+  }, [entries, selectedDate]);
+
+  const displayEntries = searchQuery ? entries : filteredEntries;
+
   const markedDates = React.useMemo(() => {
     const marks: any = {};
     entries.forEach(entry => {
@@ -93,8 +103,16 @@ export default function DiaryScreen() {
       }
       marks[dateString] = { marked: true, dotColor: color };
     });
+
+    if (selectedDate) {
+      marks[selectedDate] = {
+        ...marks[selectedDate],
+        selected: true,
+        selectedColor: Colors.primary,
+      };
+    }
     return marks;
-  }, [entries]);
+  }, [entries, selectedDate]);
 
   const renderItem = ({ item }: { item: DiaryEntry }) => (
     <TouchableOpacity style={styles.entryCard} onPress={() => handleEntryPress(item)}>
@@ -162,6 +180,9 @@ export default function DiaryScreen() {
               textMonthFontWeight: 'bold',
             }}
             markedDates={markedDates}
+            onDayPress={(day) => {
+              setSelectedDate(day.dateString);
+            }}
           />
         </View>
       )}
@@ -170,14 +191,16 @@ export default function DiaryScreen() {
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={entries}
+          data={displayEntries}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="book-outline" size={64} color={Colors.border} />
-              <Text style={styles.emptyText}>No entries found</Text>
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'No entries found' : `No entry for ${new Date(selectedDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}`}
+              </Text>
             </View>
           }
         />
@@ -187,6 +210,7 @@ export default function DiaryScreen() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSave={handleSaveEntry}
+        date={selectedDate}
       />
 
       <DiaryDetailModal

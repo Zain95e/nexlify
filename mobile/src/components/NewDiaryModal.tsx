@@ -9,6 +9,7 @@ interface NewDiaryModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (entry: any) => void;
+  date?: string | null;
 }
 
 const MOODS = [
@@ -19,7 +20,7 @@ const MOODS = [
   { label: 'stressed', emoji: '😰' }
 ];
 
-export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, onSave }) => {
+export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, onSave, date }) => {
   const [content, setContent] = useState('');
   const [mood, setMood] = useState('neutral');
   const [isRecording, setIsRecording] = useState(false);
@@ -27,6 +28,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
   const [isSaving, setIsSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [metering, setMetering] = useState<number>(-160);
   const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Cleanup on unmount
@@ -50,7 +52,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
         playsInSilentModeIOS: true,
       });
       const { recording } = await Audio.Recording.createAsync({
-        isMeteringEnabled: false,
+        isMeteringEnabled: true,
         android: {
           extension: '.m4a',
           outputFormat: Audio.AndroidOutputFormat.MPEG_4,
@@ -75,6 +77,14 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
           bitsPerSecond: 64000,
         },
       });
+
+      recording.setOnRecordingStatusUpdate((status) => {
+        if (status.metering !== undefined) {
+          setMetering(status.metering);
+        }
+      });
+      await recording.setProgressUpdateInterval(100);
+
       recordingRef.current = recording;
       setIsRecording(true);
     } catch (err) {
@@ -91,6 +101,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
       await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
+      setMetering(-160); // Reset metering
       if (uri) handleTranscribe(uri);
     } catch (err) {
       console.warn(err);
@@ -111,6 +122,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
 
       const response = await api.post('/diary/transcribe', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000, // 60s timeout to allow full Whisper execution
       });
 
       if (response.data?.data?.text) {
@@ -132,7 +144,7 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
 
     setIsSaving(true);
     try {
-      const response = await api.post('/diary', { content, mood, tags });
+      const response = await api.post('/diary', { content, mood, tags, date });
       onSave(response.data.data.entry);
       setContent('');
       setMood('neutral');
@@ -144,6 +156,16 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const getBarHeight = (index: number) => {
+    if (!isRecording) return 4;
+    // Map metering from [-160, 0] to normalized percentage [0.1, 1.0]
+    const normalized = Math.max(0.1, (metering + 160) / 160);
+    // Dynamic organic equalizer effect combining voice amplitude and wave phase
+    const phase = (Date.now() / 150) + index * 0.4;
+    const wave = Math.sin(phase) * 0.3 + 0.7;
+    return Math.min(32, Math.max(4, normalized * 32 * wave));
   };
 
   return (
@@ -224,9 +246,24 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
                 <Ionicons name="mic" size={24} color="#FFF" />
               )}
             </TouchableOpacity>
-            <Text style={styles.micHint}>
-              {isTranscribing ? 'Transcribing...' : isRecording ? 'Recording... Release to stop' : 'Hold to speak'}
-            </Text>
+            
+            {isRecording ? (
+              <View style={styles.waveContainer}>
+                {[...Array(9)].map((_, i) => (
+                  <View 
+                    key={i} 
+                    style={[
+                      styles.waveBar, 
+                      { height: getBarHeight(i) }
+                    ]} 
+                  />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.micHint}>
+                {isTranscribing ? 'Transcribing...' : 'Hold to speak'}
+              </Text>
+            )}
 
             <TouchableOpacity 
               style={styles.saveBtn}
@@ -366,6 +403,20 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     fontFamily: 'DM Sans',
     fontSize: 12,
+  },
+  waveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    marginLeft: 16,
+    flex: 1,
+  },
+  waveBar: {
+    width: 3,
+    backgroundColor: Colors.error,
+    borderRadius: 1.5,
+    marginHorizontal: 1.5,
   },
   saveBtn: {
     backgroundColor: Colors.success,

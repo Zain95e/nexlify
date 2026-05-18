@@ -22,6 +22,7 @@ export default function DetoxConfigScreen() {
   ]);
   const [duration, setDuration] = useState('30');
   const [loading, setLoading] = useState(true);
+  const [hasUsagePerm, setHasUsagePerm] = useState(true);
 
   useEffect(() => {
     loadApps();
@@ -29,6 +30,20 @@ export default function DetoxConfigScreen() {
 
   const loadApps = async () => {
     try {
+      // Check permission first
+      const hasPerm = ScreenTimeModule.hasUsagePermission();
+      setHasUsagePerm(hasPerm);
+      if (!hasPerm) {
+        Alert.alert(
+          'Permission Required',
+          'Usage Access Permission is required to track screen time and detect installed apps. Please grant it in system settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => ScreenTimeModule.requestUsagePermission() }
+          ]
+        );
+      }
+
       // Load saved selections first
       const saved = await AsyncStorage.getItem('@detox_blocked_apps');
       if (saved) {
@@ -129,7 +144,26 @@ export default function DetoxConfigScreen() {
         <Text style={styles.helpText}>Toggle apps to BLOCK them during your focus session. Known distractions are blocked automatically.</Text>
         
         {apps.length === 0 ? (
-          <Text style={styles.helpText}>No installable apps detected. Please ensure app queries are permitted.</Text>
+          <View style={styles.permissionCard}>
+            <Ionicons name="apps-outline" size={48} color={Colors.warning} style={{ marginBottom: 12, alignSelf: 'center' }} />
+            <Text style={styles.permissionCardTitle}>No Apps Detected</Text>
+            <Text style={styles.permissionCardText}>
+              Usage Access permission and App Query access are required to automatically scan the apps installed on your phone.
+            </Text>
+            {!hasUsagePerm ? (
+              <TouchableOpacity 
+                style={styles.permissionCardBtn}
+                onPress={() => ScreenTimeModule.requestUsagePermission()}
+              >
+                <Text style={styles.permissionCardBtnText}>Enable Usage Access</Text>
+                <Ionicons name="open-outline" size={16} color="#FFF" style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.permissionCardSubtext}>
+                Please ensure you have granted all requested permissions or installed popular distraction apps on your device.
+              </Text>
+            )}
+          </View>
         ) : (
           apps.map((app) => {
             const isBlocked = blockedApps.includes(app.packageName);
@@ -179,5 +213,52 @@ const styles = StyleSheet.create({
   appPkg: { fontSize: 12, color: Colors.muted, fontFamily: 'DM Sans' },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: Colors.background, borderTopWidth: 1, borderTopColor: Colors.border },
   startBtn: { backgroundColor: Colors.primary, padding: 16, borderRadius: 16, alignItems: 'center' },
-  startBtnText: { color: 'white', fontSize: 16, fontWeight: '700', fontFamily: 'Syne' }
+  startBtnText: { color: 'white', fontSize: 16, fontWeight: '700', fontFamily: 'Syne' },
+  permissionCard: {
+    backgroundColor: 'rgba(255, 179, 71, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 71, 0.3)',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  permissionCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Syne',
+    color: Colors.warning,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  permissionCardText: {
+    fontSize: 13,
+    color: Colors.muted,
+    fontFamily: 'DM Sans',
+    lineHeight: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  permissionCardBtn: {
+    flexDirection: 'row',
+    backgroundColor: Colors.warning,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionCardBtnText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: 'Syne',
+  },
+  permissionCardSubtext: {
+    fontSize: 12,
+    color: Colors.muted,
+    fontFamily: 'DM Sans',
+    textAlign: 'center',
+  },
 });
