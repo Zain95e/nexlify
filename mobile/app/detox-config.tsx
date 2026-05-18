@@ -1,31 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../src/theme';
 import ScreenTimeModule, { InstalledApp } from '../modules/screen-time/ScreenTimeModule';
 import { startDetoxSession } from '../src/api/detoxApi';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const POPULAR_DISTRACTIONS = [
-  { appName: '📸 Instagram', packageName: 'com.instagram.android' },
-  { appName: '🎥 YouTube', packageName: 'com.google.android.youtube' },
-  { appName: '🤖 Reddit', packageName: 'com.reddit.frontpage' },
-  { appName: '👥 Facebook', packageName: 'com.facebook.katana' },
-  { appName: '🎵 TikTok', packageName: 'com.zhiliaoapp.musically' },
-  { appName: '🐦 X / Twitter', packageName: 'com.twitter.android' },
-  { appName: '👻 Snapchat', packageName: 'com.snapchat.android' },
-  { appName: '💬 WhatsApp', packageName: 'com.whatsapp' },
-];
-
 export default function DetoxConfigScreen() {
   const [apps, setApps] = useState<InstalledApp[]>([]);
-  // Automatically select Instagram, YouTube, Reddit, and Facebook to be blocked by default!
+  // Automatically select known distracting apps to be blocked by default!
   const [blockedApps, setBlockedApps] = useState<string[]>([
     'com.instagram.android',
     'com.google.android.youtube',
     'com.reddit.frontpage',
     'com.facebook.katana',
+    'com.zhiliaoapp.musically', // TikTok
+    'com.twitter.android',      // Twitter
+    'com.snapchat.android',     // Snapchat
   ]);
   const [duration, setDuration] = useState('30');
   const [loading, setLoading] = useState(true);
@@ -36,6 +29,12 @@ export default function DetoxConfigScreen() {
 
   const loadApps = async () => {
     try {
+      // Load saved selections first
+      const saved = await AsyncStorage.getItem('@detox_blocked_apps');
+      if (saved) {
+        setBlockedApps(JSON.parse(saved));
+      }
+
       const installed = await ScreenTimeModule.getInstalledApps();
       
       // Filter out system apps and essentials that should never be blocked
@@ -49,32 +48,27 @@ export default function DetoxConfigScreen() {
                pkg !== 'com.nexlify';
       });
 
-      // Merge with POPULAR_DISTRACTIONS to ensure they always show up
-      const mergedList = [...POPULAR_DISTRACTIONS];
-      filteredInstalled.forEach(instApp => {
-        if (!mergedList.some(item => item.packageName === instApp.packageName)) {
-          mergedList.push({
-            appName: `📦 ${instApp.appName}`,
-            packageName: instApp.packageName,
-          });
-        }
-      });
-
-      setApps(mergedList.sort((a, b) => a.appName.localeCompare(b.appName)));
+      setApps(filteredInstalled.sort((a, b) => a.appName.localeCompare(b.appName)));
     } catch (e) {
       console.warn('Native installed apps fetch error:', e);
-      // Fallback to our popular distractions list if native call fails
-      setApps(POPULAR_DISTRACTIONS);
+      setApps([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleBlocked = (pkg: string, shouldBlock: boolean) => {
+  const toggleBlocked = async (pkg: string, shouldBlock: boolean) => {
+    let updated: string[];
     if (shouldBlock) {
-      setBlockedApps([...blockedApps, pkg]);
+      updated = [...blockedApps, pkg];
     } else {
-      setBlockedApps(blockedApps.filter(p => p !== pkg));
+      updated = blockedApps.filter(p => p !== pkg);
+    }
+    setBlockedApps(updated);
+    try {
+      await AsyncStorage.setItem('@detox_blocked_apps', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save blocked apps:', e);
     }
   };
 
@@ -132,26 +126,30 @@ export default function DetoxConfigScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Distraction App Blocker</Text>
-        <Text style={styles.helpText}>Toggle apps to BLOCK them during your focus session. Pre-selected apps are blocked automatically.</Text>
+        <Text style={styles.helpText}>Toggle apps to BLOCK them during your focus session. Known distractions are blocked automatically.</Text>
         
-        {apps.map((app) => {
-          const isBlocked = blockedApps.includes(app.packageName);
-          return (
-            <View key={app.packageName} style={styles.appRow}>
-              <View style={styles.appInfo}>
-                <Text style={styles.appName} numberOfLines={1}>{app.appName}</Text>
-                <Text style={styles.appPkg}>{app.packageName}</Text>
+        {apps.length === 0 ? (
+          <Text style={styles.helpText}>No installable apps detected. Please ensure app queries are permitted.</Text>
+        ) : (
+          apps.map((app) => {
+            const isBlocked = blockedApps.includes(app.packageName);
+            return (
+              <View key={app.packageName} style={styles.appRow}>
+                <View style={styles.appInfo}>
+                  <Text style={styles.appName} numberOfLines={1}>{app.appName}</Text>
+                  <Text style={styles.appPkg}>{app.packageName}</Text>
+                </View>
+                
+                <Switch
+                  value={isBlocked}
+                  onValueChange={(val) => toggleBlocked(app.packageName, val)}
+                  trackColor={{ true: Colors.error, false: Colors.border }}
+                  thumbColor={isBlocked ? Colors.error : Colors.muted}
+                />
               </View>
-              
-              <Switch
-                value={isBlocked}
-                onValueChange={(val) => toggleBlocked(app.packageName, val)}
-                trackColor={{ true: Colors.error, false: Colors.border }}
-                thumbColor={isBlocked ? Colors.error : Colors.muted}
-              />
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollView>
       
       <View style={styles.footer}>

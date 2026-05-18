@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
-  TouchableOpacity, Modal, TextInput, ScrollView, Alert,
+  TouchableOpacity, Modal, TextInput, ScrollView, Alert, Switch,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -155,6 +157,18 @@ export default function PomodoroScreen() {
   } = useSelector((s: RootState) => s.pomodoro);
 
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [appBlockingEnabled, setAppBlockingEnabled] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@pomodoro_app_blocking').then(val => {
+      setAppBlockingEnabled(val === 'true');
+    });
+  }, []);
+
+  const toggleAppBlocking = async (value: boolean) => {
+    setAppBlockingEnabled(value);
+    await AsyncStorage.setItem('@pomodoro_app_blocking', value ? 'true' : 'false');
+  };
 
   // Activate the countdown + blocking logic
   usePomodoroTimer();
@@ -243,6 +257,32 @@ export default function PomodoroScreen() {
             onPress={() => setSettingsVisible(true)}
           >
             <Ionicons name="timer-outline" size={26} color={Colors.muted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Distraction Blocker Control Card */}
+        <View style={styles.blockerCard}>
+          <View style={styles.blockerHeader}>
+            <View style={styles.blockerTitleRow}>
+              <Ionicons name="shield-checkmark" size={20} color={appBlockingEnabled ? Colors.primary : Colors.muted} style={{ marginRight: 8 }} />
+              <Text style={styles.blockerTitle}>App Blocker during Focus</Text>
+            </View>
+            <Switch
+              value={appBlockingEnabled}
+              onValueChange={toggleAppBlocking}
+              trackColor={{ true: Colors.primary, false: Colors.border }}
+              thumbColor={appBlockingEnabled ? '#000' : Colors.muted}
+            />
+          </View>
+          <Text style={styles.blockerDesc}>
+            Restrict distraction apps from opening when focus session is running.
+          </Text>
+          <TouchableOpacity
+            style={styles.configureBtn}
+            onPress={() => router.push('/detox-config' as any)}
+          >
+            <Text style={styles.configureBtnText}>Configure Distracting Apps</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -413,4 +453,48 @@ const styles = StyleSheet.create({
   },
   dotDone: { backgroundColor: Colors.success },
   dotActive: { backgroundColor: Colors.primary, transform: [{ scale: 1.3 }] },
+  blockerCard: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  blockerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  blockerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blockerTitle: {
+    fontFamily: 'Syne',
+    fontWeight: '800',
+    fontSize: 15,
+    color: Colors.text,
+  },
+  blockerDesc: {
+    fontFamily: 'DM Sans',
+    fontSize: 12,
+    color: Colors.muted,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  configureBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  configureBtnText: {
+    fontFamily: 'Syne',
+    fontWeight: '800',
+    fontSize: 13,
+    color: Colors.primary,
+    marginRight: 4,
+  },
 });

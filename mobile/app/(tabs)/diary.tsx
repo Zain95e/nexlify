@@ -6,7 +6,7 @@ import { Colors } from '../../src/theme';
 import api from '../../src/api';
 import { NewDiaryModal } from '../../src/components/NewDiaryModal';
 import { DiaryDetailModal } from '../../src/components/DiaryDetailModal';
-import { Calendar } from 'react-native-calendars';
+import Calendar from 'react-native-calendars/src/calendar';
 
 interface DiaryEntry {
   id: string;
@@ -27,6 +27,14 @@ const getMoodEmoji = (mood: string) => {
 };
 
 export default function DiaryScreen() {
+  console.log('[DiaryScreen] Debug Imports:', {
+    SafeAreaView: typeof SafeAreaView,
+    Ionicons: typeof Ionicons,
+    Calendar: typeof Calendar,
+    NewDiaryModal: typeof NewDiaryModal,
+    DiaryDetailModal: typeof DiaryDetailModal,
+  });
+
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

@@ -5,6 +5,7 @@ import { tick, completeSession } from '../store/slices/pomodoroSlice';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { NativeModules, Platform } from 'react-native';
 import notifee, { AndroidImportance } from '@notifee/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api';
 
 const { PomodoroModule } = NativeModules;
@@ -49,6 +50,8 @@ export const usePomodoroTimer = () => {
     startTimeRef.current = null;
   };
 
+  const blockingActiveRef = useRef(false);
+
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
       if (phase === 'focus') {
@@ -56,13 +59,21 @@ export const usePomodoroTimer = () => {
         if (!startTimeRef.current) {
           startTimeRef.current = new Date().toISOString();
         }
-        if (Platform.OS === 'android' && PomodoroModule) {
-          const distractingApps = limits.map(l => l.app_package);
-          PomodoroModule.setBlockedApps(distractingApps);
+        if (Platform.OS === 'android' && PomodoroModule && !blockingActiveRef.current) {
+          blockingActiveRef.current = true;
+          AsyncStorage.getItem('@pomodoro_app_blocking').then(val => {
+            if (val === 'true') {
+              AsyncStorage.getItem('@detox_blocked_apps').then(savedStr => {
+                const distractingApps = savedStr ? JSON.parse(savedStr) : [];
+                PomodoroModule.setBlockedApps(distractingApps);
+              });
+            }
+          });
         }
       } else {
         deactivateKeepAwake();
-        if (Platform.OS === 'android' && PomodoroModule) {
+        if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
+          blockingActiveRef.current = false;
           PomodoroModule.clearBlockedApps();
         }
       }
@@ -73,7 +84,8 @@ export const usePomodoroTimer = () => {
     } else if (isRunning && timeRemaining === 0) {
       // Time is up
       deactivateKeepAwake();
-      if (Platform.OS === 'android' && PomodoroModule) {
+      if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
+        blockingActiveRef.current = false;
         PomodoroModule.clearBlockedApps();
       }
       
@@ -93,10 +105,10 @@ export const usePomodoroTimer = () => {
     } else {
       // Paused or stopped manually
       deactivateKeepAwake();
-      if (Platform.OS === 'android' && PomodoroModule) {
+      if (Platform.OS === 'android' && PomodoroModule && blockingActiveRef.current) {
+        blockingActiveRef.current = false;
         PomodoroModule.clearBlockedApps();
       }
-      // If it was paused during focus, we could log it as incomplete if stopped, but for now we just clear the list.
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
 
