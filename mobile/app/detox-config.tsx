@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../src/theme';
 import ScreenTimeModule, { InstalledApp } from '../modules/screen-time/ScreenTimeModule';
@@ -7,10 +7,27 @@ import { startDetoxSession } from '../src/api/detoxApi';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+const POPULAR_DISTRACTIONS = [
+  { appName: '📸 Instagram', packageName: 'com.instagram.android' },
+  { appName: '🎥 YouTube', packageName: 'com.google.android.youtube' },
+  { appName: '🤖 Reddit', packageName: 'com.reddit.frontpage' },
+  { appName: '👥 Facebook', packageName: 'com.facebook.katana' },
+  { appName: '🎵 TikTok', packageName: 'com.zhiliaoapp.musically' },
+  { appName: '🐦 X / Twitter', packageName: 'com.twitter.android' },
+  { appName: '👻 Snapchat', packageName: 'com.snapchat.android' },
+  { appName: '💬 WhatsApp', packageName: 'com.whatsapp' },
+];
+
 export default function DetoxConfigScreen() {
   const [apps, setApps] = useState<InstalledApp[]>([]);
-  const [whitelist, setWhitelist] = useState<string[]>([]);
-  const [duration, setDuration] = useState('60');
+  // Automatically select Instagram, YouTube, Reddit, and Facebook to be blocked by default!
+  const [blockedApps, setBlockedApps] = useState<string[]>([
+    'com.instagram.android',
+    'com.google.android.youtube',
+    'com.reddit.frontpage',
+    'com.facebook.katana',
+  ]);
+  const [duration, setDuration] = useState('30');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,30 +37,68 @@ export default function DetoxConfigScreen() {
   const loadApps = async () => {
     try {
       const installed = await ScreenTimeModule.getInstalledApps();
-      setApps(installed.sort((a, b) => a.appName.localeCompare(b.appName)));
+      
+      // Filter out system apps and essentials that should never be blocked
+      const filteredInstalled = (installed || []).filter(app => {
+        const pkg = app.packageName.toLowerCase();
+        return !pkg.includes('dialer') && 
+               !pkg.includes('telecom') && 
+               !pkg.includes('messaging') && 
+               !pkg.includes('mms') &&
+               !pkg.includes('settings') &&
+               pkg !== 'com.nexlify';
+      });
+
+      // Merge with POPULAR_DISTRACTIONS to ensure they always show up
+      const mergedList = [...POPULAR_DISTRACTIONS];
+      filteredInstalled.forEach(instApp => {
+        if (!mergedList.some(item => item.packageName === instApp.packageName)) {
+          mergedList.push({
+            appName: `📦 ${instApp.appName}`,
+            packageName: instApp.packageName,
+          });
+        }
+      });
+
+      setApps(mergedList.sort((a, b) => a.appName.localeCompare(b.appName)));
     } catch (e) {
-      console.warn(e);
+      console.warn('Native installed apps fetch error:', e);
+      // Fallback to our popular distractions list if native call fails
+      setApps(POPULAR_DISTRACTIONS);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleWhitelist = (pkg: string, value: boolean) => {
-    if (value) {
-      setWhitelist([...whitelist, pkg]);
+  const toggleBlocked = (pkg: string, shouldBlock: boolean) => {
+    if (shouldBlock) {
+      setBlockedApps([...blockedApps, pkg]);
     } else {
-      setWhitelist(whitelist.filter(p => p !== pkg));
+      setBlockedApps(blockedApps.filter(p => p !== pkg));
     }
   };
 
   const startCustomDetox = async () => {
     const mins = parseInt(duration, 10);
-    if (isNaN(mins) || mins <= 0) return alert('Invalid duration');
+    if (isNaN(mins) || mins <= 0) {
+      Alert.alert('Error', 'Please enter a valid duration.');
+      return;
+    }
     
-    ScreenTimeModule.startDetox(mins, whitelist);
-    await startDetoxSession(mins);
-    alert(`Detox started for ${mins} minutes!`);
-    router.back();
+    // Whitelist is all apps that are NOT blocked
+    const whitelist = apps
+      .map(app => app.packageName)
+      .filter(pkg => !blockedApps.includes(pkg));
+
+    try {
+      ScreenTimeModule.startDetox(mins, whitelist);
+      await startDetoxSession(mins);
+      Alert.alert('Success', `Focus session started! Blocked apps are now restricted.`);
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to start Focus session.');
+      console.error(e);
+    }
   };
 
   if (loading) {
@@ -65,20 +120,22 @@ export default function DetoxConfigScreen() {
         </View>
 
         <View style={styles.configCard}>
-          <Text style={styles.label}>Detox Duration (minutes)</Text>
+          <Text style={styles.label}>Focus Duration (minutes)</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
             value={duration}
             onChangeText={setDuration}
+            placeholder="e.g. 30"
+            placeholderTextColor={Colors.muted}
           />
         </View>
 
-        <Text style={styles.sectionTitle}>Allowed Apps (Whitelist)</Text>
-        <Text style={styles.helpText}>Phone, Messages, and Settings are always allowed natively.</Text>
+        <Text style={styles.sectionTitle}>Distraction App Blocker</Text>
+        <Text style={styles.helpText}>Toggle apps to BLOCK them during your focus session. Pre-selected apps are blocked automatically.</Text>
         
         {apps.map((app) => {
-          const isAllowed = whitelist.includes(app.packageName);
+          const isBlocked = blockedApps.includes(app.packageName);
           return (
             <View key={app.packageName} style={styles.appRow}>
               <View style={styles.appInfo}>
@@ -87,9 +144,10 @@ export default function DetoxConfigScreen() {
               </View>
               
               <Switch
-                value={isAllowed}
-                onValueChange={(val) => toggleWhitelist(app.packageName, val)}
-                trackColor={{ true: Colors.success, false: Colors.border }}
+                value={isBlocked}
+                onValueChange={(val) => toggleBlocked(app.packageName, val)}
+                trackColor={{ true: Colors.error, false: Colors.border }}
+                thumbColor={isBlocked ? Colors.error : Colors.muted}
               />
             </View>
           );
@@ -98,7 +156,7 @@ export default function DetoxConfigScreen() {
       
       <View style={styles.footer}>
         <TouchableOpacity style={styles.startBtn} onPress={startCustomDetox}>
-          <Text style={styles.startBtnText}>Start Detox</Text>
+          <Text style={styles.startBtnText}>Start Focus Session</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -107,8 +165,8 @@ export default function DetoxConfigScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 24, paddingBottom: 100 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+  content: { padding: 24, paddingBottom: 120 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 32 },
   backBtn: { marginRight: 16 },
   title: { fontSize: 24, fontWeight: '800', fontFamily: 'Syne', color: Colors.text },

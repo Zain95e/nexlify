@@ -285,7 +285,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
                       <TextInput
                         style={[
                           styles.smartTextInput,
-                          title ? { color: 'transparent' } : { color: Colors.text }
+                          title ? { color: 'rgba(0,0,0,0)' } : { color: Colors.text }
                         ]}
                         placeholder="What needs to be done?"
                         placeholderTextColor={Colors.muted}
@@ -484,8 +484,11 @@ const styles = StyleSheet.create({
     fontFamily: 'DM-Sans',
     height: '100%',
     width: '100%',
-    padding: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     margin: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   visualTextContainer: {
     position: 'absolute',
@@ -499,23 +502,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'DM-Sans',
     color: Colors.muted,
+    includeFontPadding: false,
   },
   richText: {
     fontSize: 16,
     fontFamily: 'DM-Sans',
     color: Colors.text,
+    includeFontPadding: false,
   },
   normalWord: {
     color: Colors.text,
+    includeFontPadding: false,
   },
   highlightedWord: {
     color: Colors.primary,
     backgroundColor: 'rgba(108, 99, 255, 0.15)',
     fontWeight: '700',
     borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 0,
     overflow: 'hidden',
+    includeFontPadding: false,
   },
   parsedBadge: {
     flexDirection: 'row',

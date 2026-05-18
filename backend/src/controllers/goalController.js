@@ -18,8 +18,8 @@ const getUserCompletionRate = async (userId) => {
   // past 30 days tasks vs completed
   const query = `
     SELECT 
-      SUM(target_count) as total_target,
-      SUM(completed_count) as total_completed
+      SUM(dt.target_count) as total_target,
+      SUM(dt.completed_count) as total_completed
     FROM daily_tasks dt
     JOIN goals g ON dt.goal_id = g.id
     WHERE g.user_id = $1 

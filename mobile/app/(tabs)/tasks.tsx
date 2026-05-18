@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, ScrollView, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,49 @@ export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Toast state
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-50)).current;
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showCompletionToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    fadeAnim.setValue(0);
+    slideAnim.setValue(-50);
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: -50,
+            duration: 250,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          setToastVisible(false);
+        });
+      }, 1800);
+    });
+  };
 
   // Local date filter state variables
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'week' | 'month' | 'custom'>('all');
@@ -68,8 +112,11 @@ export default function TasksScreen() {
 
   const handleCompleteTask = async (id: string) => {
     try {
+      const taskToComplete = tasks.find(t => t.id === id);
+      const titleToShow = taskToComplete ? `"${taskToComplete.title}" completed!` : 'Task completed!';
       await api.patch(`/tasks/${id}/complete`);
       dispatch(deleteTask(id));
+      showCompletionToast(titleToShow);
     } catch (error) {
       console.error('Complete task error:', error);
     }
@@ -77,8 +124,11 @@ export default function TasksScreen() {
 
   const handleIncompleteTask = async (id: string) => {
     try {
+      const taskToIncomplete = tasks.find(t => t.id === id);
+      const titleToShow = taskToIncomplete ? `"${taskToIncomplete.title}" marked incomplete!` : 'Task marked incomplete!';
       await api.patch(`/tasks/${id}/incomplete`);
       dispatch(deleteTask(id));
+      showCompletionToast(titleToShow);
     } catch (error) {
       console.error('Incomplete task error:', error);
     }
@@ -308,6 +358,20 @@ export default function TasksScreen() {
         onClose={() => setModalVisible(false)}
         onSubmit={handleCreateTask}
       />
+
+      {toastVisible && (
+        <Animated.View style={[
+          styles.toastContainer,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+        ]}>
+          <View style={styles.toastContent}>
+            <View style={styles.toastCheckBg}>
+              <Ionicons name="checkmark" size={14} color="#FFF" />
+            </View>
+            <Text style={styles.toastText} numberOfLines={1}>{toastMessage}</Text>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -436,5 +500,43 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     fontFamily: 'DM-Sans',
     marginTop: 16,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 24,
+    right: 24,
+    zIndex: 9999,
+    alignItems: 'center',
+  },
+  toastContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#13131A',
+    borderWidth: 1.5,
+    borderColor: Colors.success,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastCheckBg: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toastText: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'Syne',
   },
 });

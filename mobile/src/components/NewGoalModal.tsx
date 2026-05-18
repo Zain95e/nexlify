@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../theme';
@@ -18,16 +18,18 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({ visible, onClose, on
   const [deadline, setDeadline] = useState(new Date(Date.now() + 86400000 * 7)); // Default 1 week
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSave = async () => {
+    setErrorMsg(null);
     if (!description.trim() || !targetCount.trim()) {
-      Alert.alert('Validation', 'Please provide a description and target count.');
+      setErrorMsg('Please provide a description and target count.');
       return;
     }
 
     const target = parseInt(targetCount);
     if (isNaN(target) || target <= 0) {
-      Alert.alert('Validation', 'Target count must be a positive number.');
+      setErrorMsg('Target count must be a positive number.');
       return;
     }
 
@@ -44,9 +46,10 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({ visible, onClose, on
       setTargetCount('');
       setCategory('');
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      Alert.alert('Error', 'Failed to create goal.');
+      const msg = err.response?.data?.message || err.message || 'Failed to create goal.';
+      setErrorMsg(msg);
     } finally {
       setIsSaving(false);
     }
@@ -60,72 +63,95 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({ visible, onClose, on
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>New Goal</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={Colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Goal Description (e.g. Read 5 Books)"
-            placeholderTextColor={Colors.muted}
-            value={description}
-            onChangeText={setDescription}
-          />
-
-          <View style={styles.row}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginRight: 8 }]}
-              placeholder="Target Count"
-              placeholderTextColor={Colors.muted}
-              value={targetCount}
-              onChangeText={setTargetCount}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={[styles.input, { flex: 1, marginLeft: 8 }]}
-              placeholder="Category (e.g. Reading)"
-              placeholderTextColor={Colors.muted}
-              value={category}
-              onChangeText={setCategory}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
-            <Ionicons name="calendar-outline" size={20} color={Colors.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.dateText}>
-              Deadline: {deadline.toLocaleDateString()}
-            </Text>
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={deadline}
-              mode="date"
-              display="default"
-              onChange={onChangeDate}
-              minimumDate={new Date()}
-            />
-          )}
-
-          <TouchableOpacity 
-            style={styles.saveBtn}
-            onPress={handleSave}
-            disabled={isSaving}
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoid}
           >
-            {isSaving ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text style={styles.saveBtnText}>Create Goal</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.content}>
+                <View style={styles.header}>
+                  <Text style={styles.headerTitle}>New Goal</Text>
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons name="close" size={24} color={Colors.text} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  
+                  {/* Beautiful Inline Error Banner */}
+                  {errorMsg && (
+                    <View style={styles.errorBanner}>
+                      <Ionicons name="alert-circle" size={18} color={Colors.error} />
+                      <Text style={styles.errorText} numberOfLines={2}>{errorMsg}</Text>
+                      <TouchableOpacity onPress={() => setErrorMsg(null)}>
+                        <Ionicons name="close" size={16} color={Colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Goal Description (e.g. Read 5 Books)"
+                    placeholderTextColor={Colors.muted}
+                    value={description}
+                    onChangeText={setDescription}
+                  />
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, { flex: 1, marginRight: 8 }]}
+                      placeholder="Target Count"
+                      placeholderTextColor={Colors.muted}
+                      value={targetCount}
+                      onChangeText={setTargetCount}
+                      keyboardType="numeric"
+                    />
+                    <TextInput
+                      style={[styles.input, { flex: 1, marginLeft: 8 }]}
+                      placeholder="Category (e.g. Reading)"
+                      placeholderTextColor={Colors.muted}
+                      value={category}
+                      onChangeText={setCategory}
+                    />
+                  </View>
+
+                  <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
+                    <Ionicons name="calendar-outline" size={20} color={Colors.primary} style={{ marginRight: 8 }} />
+                    <Text style={styles.dateText}>
+                      Deadline: {deadline.toLocaleDateString()}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={deadline}
+                      mode="date"
+                      display="default"
+                      onChange={onChangeDate}
+                      minimumDate={new Date()}
+                    />
+                  )}
+
+                  <TouchableOpacity 
+                    style={styles.saveBtn}
+                    onPress={handleSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <Text style={styles.saveBtnText}>Create Goal</Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -133,7 +159,11 @@ export const NewGoalModal: React.FC<NewGoalModalProps> = ({ visible, onClose, on
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  keyboardAvoid: {
+    width: '100%',
     justifyContent: 'flex-end',
   },
   content: {
@@ -141,6 +171,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
+    maxHeight: '85%',
   },
   header: {
     flexDirection: 'row',
@@ -154,12 +185,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Syne',
     color: Colors.text,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 75, 75, 0.2)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.error,
+    fontWeight: '600',
+    fontFamily: 'DM-Sans',
+  },
   input: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    fontFamily: 'DM Sans',
+    fontFamily: 'DM-Sans',
     color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -189,6 +238,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
+    marginBottom: Platform.OS === 'ios' ? 24 : 8,
   },
   saveBtnText: {
     color: '#FFF',

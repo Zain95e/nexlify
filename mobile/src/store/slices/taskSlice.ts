@@ -8,6 +8,7 @@ interface Task {
   is_completed: boolean;
   deadline?: string;
   category?: string;
+  created_at?: string;
 }
 
 interface TaskState {

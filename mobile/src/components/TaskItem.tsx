@@ -1,33 +1,43 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { Colors } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography } from '../theme';
+import { Swipeable } from 'react-native-gesture-handler';
 
 interface TaskItemProps {
   task: {
     id: string;
     title: string;
-    deadline?: string;
-    priority: string;
-    category?: string;
+    description?: string;
+    priority: 'low' | 'medium' | 'high';
     is_completed: boolean;
+    deadline?: string;
+    category?: string;
+    created_at?: string;
   };
   onComplete: (id: string) => void;
-  onDelete: (id: string) => void;
   onIncomplete?: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, onIncomplete }) => {
-  const renderRightActions = (progress: any, dragX: any) => {
+export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onIncomplete, onDelete }) => {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
     const scale = dragX.interpolate({
-      inputRange: [-100, 0],
+      inputRange: [-80, 0],
       outputRange: [1, 0],
       extrapolate: 'clamp',
     });
 
     return (
-      <TouchableOpacity onPress={() => onDelete(task.id)} style={styles.deleteAction}>
+      <TouchableOpacity 
+        onPress={() => {
+          swipeableRef.current?.close();
+          onDelete(task.id);
+        }} 
+        style={styles.deleteAction}
+      >
         <Animated.View style={{ transform: [{ scale }] }}>
           <Ionicons name="trash-outline" size={24} color="#FFF" />
         </Animated.View>
@@ -35,20 +45,23 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, 
     );
   };
 
-  const renderLeftActions = (progress: any, dragX: any) => {
+  const renderLeftActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
     const scale = dragX.interpolate({
-      inputRange: [0, 100],
+      inputRange: [0, 80],
       outputRange: [0, 1],
       extrapolate: 'clamp',
     });
 
     const isCompleted = task.is_completed;
     const actionColor = isCompleted ? Colors.warning : Colors.success;
-    const iconName = isCompleted ? 'arrow-undo-outline' : 'checkmark-circle-outline';
+    const iconName = isCompleted ? "arrow-undo-outline" : "checkmark-outline";
 
     return (
       <TouchableOpacity 
-        onPress={() => isCompleted ? onIncomplete?.(task.id) : onComplete(task.id)} 
+        onPress={() => {
+          swipeableRef.current?.close();
+          isCompleted ? onIncomplete?.(task.id) : onComplete(task.id);
+        }} 
         style={[styles.completeAction, { backgroundColor: actionColor }]}
       >
         <Animated.View style={{ transform: [{ scale }] }}>
@@ -71,6 +84,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, 
 
   return (
     <Swipeable
+      ref={swipeableRef}
       renderRightActions={renderRightActions}
       renderLeftActions={renderLeftActions}
     >
@@ -78,15 +92,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, 
         styles.container,
         isOverdue && { borderColor: Colors.error, borderLeftWidth: 4, borderLeftColor: Colors.error }
       ]}>
+        {/* Toggle Checkbox Box with Priority Colors */}
         <TouchableOpacity 
           onPress={() => task.is_completed ? onIncomplete?.(task.id) : onComplete(task.id)}
-          style={styles.checkboxContainer}
+          style={[
+            styles.customCheckbox,
+            { borderColor: task.is_completed ? Colors.success : getPriorityColor(task.priority) },
+            task.is_completed && { backgroundColor: Colors.success }
+          ]}
         >
-          <Ionicons 
-            name={task.is_completed ? "checkmark-circle" : "ellipse-outline"} 
-            size={22} 
-            color={task.is_completed ? Colors.success : getPriorityColor(task.priority)} 
-          />
+          {task.is_completed && (
+            <Ionicons name="checkmark" size={12} color="#FFF" />
+          )}
         </TouchableOpacity>
         
         <View style={styles.content}>
@@ -99,12 +116,43 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, 
                 <Ionicons name="warning" size={14} color={Colors.error} style={{ marginLeft: 6 }} />
               )}
             </View>
-            {task.deadline && (
-              <Text style={[styles.deadline, isOverdue && { color: Colors.error }]}>
-                {isOverdue ? 'Overdue • ' : ''}
-                {new Date(task.deadline).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            )}
+
+            {/* Dynamic Metadata Row (Priority, Added Time, Deadline) */}
+            <View style={styles.metaRow}>
+              {/* Priority Badge */}
+              <View style={[
+                styles.metaBox, 
+                { 
+                  borderColor: getPriorityColor(task.priority), 
+                  backgroundColor: task.priority === 'high' ? 'rgba(255, 75, 75, 0.08)' : task.priority === 'medium' ? 'rgba(255, 193, 7, 0.08)' : 'rgba(76, 175, 80, 0.08)' 
+                }
+              ]}>
+                <Ionicons name="flag" size={10} color={getPriorityColor(task.priority)} />
+                <Text style={[styles.metaText, { color: getPriorityColor(task.priority) }]}>
+                  {task.priority.toUpperCase()}
+                </Text>
+              </View>
+
+              {/* Created At Badge */}
+              {task.created_at && (
+                <View style={styles.metaBox}>
+                  <Ionicons name="add-circle-outline" size={10} color={Colors.muted} />
+                  <Text style={styles.metaText}>
+                    Added: {new Date(task.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+
+              {/* Deadline Badge */}
+              {task.deadline && (
+                <View style={[styles.metaBox, isOverdue && { borderColor: Colors.error, backgroundColor: 'rgba(255, 75, 75, 0.08)' }]}>
+                  <Ionicons name="calendar-outline" size={10} color={isOverdue ? Colors.error : Colors.muted} />
+                  <Text style={[styles.metaText, isOverdue && { color: Colors.error }]}>
+                    Due: {new Date(task.deadline).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
 
           {task.category && (
@@ -129,21 +177,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
-    height: 64,
+    paddingVertical: 12,
     paddingLeft: 12,
   },
-  checkboxContainer: {
-    width: 32,
-    height: 32,
+  customCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 4,
+    marginRight: 2,
   },
   content: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingRight: 16,
   },
   mainInfo: {
     flex: 1,
@@ -152,6 +203,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
   title: {
     fontSize: 14,
@@ -163,17 +215,34 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: Colors.muted,
   },
-  deadline: {
-    fontSize: 10,
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  metaBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: Colors.surface,
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 9,
+    fontWeight: '600',
     color: Colors.muted,
-    marginTop: 2,
     fontFamily: 'DM-Sans',
   },
   tag: {
     backgroundColor: 'rgba(108, 99, 255, 0.1)',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: 6,
+    alignSelf: 'center',
   },
   tagText: {
     fontSize: 10,
@@ -186,7 +255,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    height: 64,
     marginVertical: 6,
     borderRadius: 12,
     marginRight: 16,
@@ -195,7 +263,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    height: 64,
     marginVertical: 6,
     borderRadius: 12,
     marginLeft: 16,
