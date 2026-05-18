@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { tick, completeSession } from '../store/slices/pomodoroSlice';
-import KeepAwake from 'react-native-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { NativeModules, Platform } from 'react-native';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import api from '../api';
@@ -52,7 +52,7 @@ export const usePomodoroTimer = () => {
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
       if (phase === 'focus') {
-        KeepAwake.activate();
+        activateKeepAwakeAsync();
         if (!startTimeRef.current) {
           startTimeRef.current = new Date().toISOString();
         }
@@ -61,7 +61,7 @@ export const usePomodoroTimer = () => {
           PomodoroModule.setBlockedApps(distractingApps);
         }
       } else {
-        KeepAwake.deactivate();
+        deactivateKeepAwake();
         if (Platform.OS === 'android' && PomodoroModule) {
           PomodoroModule.clearBlockedApps();
         }
@@ -72,7 +72,7 @@ export const usePomodoroTimer = () => {
       }, 1000);
     } else if (isRunning && timeRemaining === 0) {
       // Time is up
-      KeepAwake.deactivate();
+      deactivateKeepAwake();
       if (Platform.OS === 'android' && PomodoroModule) {
         PomodoroModule.clearBlockedApps();
       }
@@ -92,7 +92,7 @@ export const usePomodoroTimer = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     } else {
       // Paused or stopped manually
-      KeepAwake.deactivate();
+      deactivateKeepAwake();
       if (Platform.OS === 'android' && PomodoroModule) {
         PomodoroModule.clearBlockedApps();
       }
@@ -102,7 +102,7 @@ export const usePomodoroTimer = () => {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      KeepAwake.deactivate();
+      deactivateKeepAwake();
     };
   }, [isRunning, timeRemaining, phase, dispatch]);
 };
