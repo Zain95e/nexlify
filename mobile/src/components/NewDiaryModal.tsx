@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 import api from '../api';
-import AudioRecorderPlayerInstance from 'react-native-audio-recorder-player';
-
-const audioRecorderPlayer: any = AudioRecorderPlayerInstance;
-
-// Note: version 4.5.0+ of this library exports a singleton instance, not a class.
+import { Audio } from 'expo-av';
 
 interface NewDiaryModalProps {
   visible: boolean;
@@ -31,22 +27,56 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
   const [isSaving, setIsSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      audioRecorderPlayer.stopRecorder().catch(() => {});
-      audioRecorderPlayer.removeRecordBackListener();
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      }
     };
   }, []);
 
   const onStartRecord = async () => {
     try {
-      setIsRecording(true);
-      await audioRecorderPlayer.startRecorder();
-      audioRecorderPlayer.addRecordBackListener((e: any) => {
-        // You can use e.currentPosition to show recording time if needed
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permission', 'Microphone permission is required to record audio.');
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
       });
+      const { recording } = await Audio.Recording.createAsync({
+        isMeteringEnabled: false,
+        android: {
+          extension: '.m4a',
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 64000,
+        },
+        ios: {
+          extension: '.m4a',
+          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+          audioQuality: Audio.IOSAudioQuality.LOW,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 64000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {
+          mimeType: 'audio/webm',
+          bitsPerSecond: 64000,
+        },
+      });
+      recordingRef.current = recording;
+      setIsRecording(true);
     } catch (err) {
       console.warn(err);
       setIsRecording(false);
@@ -54,12 +84,14 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
   };
 
   const onStopRecord = async () => {
+    if (!recordingRef.current) return;
     try {
       setIsRecording(false);
-      const result = await audioRecorderPlayer.stopRecorder();
-      audioRecorderPlayer.removeRecordBackListener();
-      
-      handleTranscribe(result);
+      await recordingRef.current.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
+      if (uri) handleTranscribe(uri);
     } catch (err) {
       console.warn(err);
       setIsRecording(false);
@@ -73,8 +105,8 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
       const formData = new FormData();
       formData.append('file', {
         uri: Platform.OS === 'android' ? audioUri : audioUri.replace('file://', ''),
-        type: 'audio/mp4',
-        name: 'diary_audio.mp4',
+        type: 'audio/m4a',
+        name: 'diary_audio.m4a',
       } as any);
 
       const response = await api.post('/diary/transcribe', formData, {
