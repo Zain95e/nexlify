@@ -130,10 +130,16 @@ class ScreenTimeModule : Module() {
     }
 
     Function("requestUsagePermission") {
-      val ctx: Context = appContext.reactContext ?: return@Function Unit
-      val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      ctx.startActivity(intent)
+      val activity = appContext.currentActivity
+      if (activity != null) {
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        activity.startActivity(intent)
+      } else {
+        val ctx: Context = appContext.reactContext ?: return@Function Unit
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        ctx.startActivity(intent)
+      }
     }
 
     Function("hasAccessibilityPermission") {

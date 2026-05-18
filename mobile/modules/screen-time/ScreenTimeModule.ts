@@ -1,4 +1,5 @@
-import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
+import { Platform, NativeEventEmitter } from 'react-native';
+import { requireNativeModule } from 'expo-modules-core';
 
 /**
  * Type returned by the native UsageStatsManager query.
@@ -16,13 +17,13 @@ export interface InstalledApp {
   packageName: string;
 }
 
+const isAndroid = Platform.OS === 'android';
+
 /**
  * Raw bridge to the native ScreenTimeModule.
  * Only available on Android — all functions are no-ops / return empty on other platforms.
  */
-const { ScreenTimeModule: _native } = NativeModules;
-
-const isAndroid = Platform.OS === 'android';
+const _native = isAndroid ? requireNativeModule('ScreenTimeModule') : null;
 
 /**
  * Event emitter for ScreenTimeModule events (like 'onAppOverridden')

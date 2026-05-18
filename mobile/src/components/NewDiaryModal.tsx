@@ -56,6 +56,12 @@ export const NewDiaryModal: React.FC<NewDiaryModalProps> = ({ visible, onClose, 
 
   const onStartRecord = async () => {
     try {
+      if (recordingRef.current) {
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+        } catch (e) {}
+        recordingRef.current = null;
+      }
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
         Alert.alert('Permission', 'Microphone permission is required to record audio.');
