@@ -82,7 +82,12 @@ class ScreenTimeModule : Module() {
       val pm = ctx.packageManager
       val packages = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
       
-      packages.map { appInfo ->
+      // Filter packages to only include user-facing launchable applications
+      val launchable = packages.filter { appInfo ->
+        pm.getLaunchIntentForPackage(appInfo.packageName) != null
+      }
+
+      launchable.map { appInfo ->
         mapOf(
           "appName" to pm.getApplicationLabel(appInfo).toString(),
           "packageName" to appInfo.packageName

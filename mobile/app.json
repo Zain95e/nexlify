@@ -23,7 +23,8 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.mobile",
       "permissions": [
-        "android.permission.QUERY_ALL_PACKAGES"
+        "android.permission.QUERY_ALL_PACKAGES",
+        "android.permission.PACKAGE_USAGE_STATS"
       ]
     },
     "web": {
