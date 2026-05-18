@@ -6,7 +6,8 @@ interface Task {
   description?: string;
   priority: 'low' | 'medium' | 'high';
   is_completed: boolean;
-  due_date?: string;
+  deadline?: string;
+  category?: string;
 }
 
 interface TaskState {

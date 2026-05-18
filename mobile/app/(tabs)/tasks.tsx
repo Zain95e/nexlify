@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, SafeAreaView, ScrollView } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography } from '../../src/theme';
+import { Colors } from '../../src/theme';
 import { TaskItem } from '../../src/components/TaskItem';
 import { AddTaskModal } from '../../src/components/AddTaskModal';
 import api from '../../src/api';
-import { setTasks, addTask, deleteTask, updateTask, setLoading } from '../../src/store/slices/taskSlice';
+import { setTasks, addTask, deleteTask } from '../../src/store/slices/taskSlice';
 import { RootState } from '../../src/store';
 
 export default function TasksScreen() {
@@ -16,8 +17,14 @@ export default function TasksScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Local date filter state variables
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'week' | 'month' | 'custom'>('all');
+  const [customRange, setCustomRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState<Date | null>(null);
+
   const fetchTasks = async () => {
-    dispatch(setLoading(true));
     try {
       const response = await api.get(`/tasks?status=${activeTab}`);
       const fetchedTasks = response.data.data;
@@ -40,7 +47,6 @@ export default function TasksScreen() {
     } catch (error) {
       console.error('Fetch tasks error:', error);
     } finally {
-      dispatch(setLoading(false));
       setRefreshing(false);
     }
   };
@@ -63,10 +69,18 @@ export default function TasksScreen() {
   const handleCompleteTask = async (id: string) => {
     try {
       await api.patch(`/tasks/${id}/complete`);
-      // Since it's completed, remove from pending list
       dispatch(deleteTask(id));
     } catch (error) {
       console.error('Complete task error:', error);
+    }
+  };
+
+  const handleIncompleteTask = async (id: string) => {
+    try {
+      await api.patch(`/tasks/${id}/incomplete`);
+      dispatch(deleteTask(id));
+    } catch (error) {
+      console.error('Incomplete task error:', error);
     }
   };
 
@@ -84,12 +98,100 @@ export default function TasksScreen() {
     fetchTasks();
   };
 
+  const handleFilterSelect = (filter: 'all' | 'today' | 'tomorrow' | 'week' | 'month' | 'custom') => {
+    if (filter === 'custom') {
+      setShowStartPicker(true);
+    } else {
+      setDateFilter(filter);
+    }
+  };
+
+  const onStartChange = (event: any, selectedDate?: Date) => {
+    setShowStartPicker(false);
+    if (selectedDate) {
+      // Start date starts at 00:00:00 of selected day
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      setTempStartDate(start);
+      setShowEndPicker(true);
+    }
+  };
+
+  const onEndChange = (event: any, selectedDate?: Date) => {
+    setShowEndPicker(false);
+    if (selectedDate && tempStartDate) {
+      // End date goes to 23:59:59 of selected day
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      setCustomRange({
+        start: tempStartDate,
+        end: end
+      });
+      setDateFilter('custom');
+    }
+  };
+
+  const clearCustomRange = (e: any) => {
+    e.stopPropagation();
+    setCustomRange(null);
+    setDateFilter('all');
+  };
+
+  const formatShortDate = (date: Date) => {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const getFilteredTasks = () => {
+    const now = new Date();
+    
+    // local bounds for filtering
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const tomStart = new Date(todayStart);
+    tomStart.setDate(todayStart.getDate() + 1);
+    const tomEnd = new Date(todayEnd);
+    tomEnd.setDate(todayEnd.getDate() + 1);
+
+    const weekEnd = new Date(todayEnd);
+    weekEnd.setDate(todayEnd.getDate() + 7);
+
+    const monthEnd = new Date(todayEnd);
+    monthEnd.setMonth(todayEnd.getMonth() + 1);
+
+    return tasks.filter((task) => {
+      if (dateFilter === 'all') return true;
+      if (!task.deadline) return false;
+
+      const taskDate = new Date(task.deadline);
+
+      if (dateFilter === 'today') {
+        return taskDate >= todayStart && taskDate <= todayEnd;
+      }
+      if (dateFilter === 'tomorrow') {
+        return taskDate >= tomStart && taskDate <= tomEnd;
+      }
+      if (dateFilter === 'week') {
+        return taskDate >= todayStart && taskDate <= weekEnd;
+      }
+      if (dateFilter === 'month') {
+        return taskDate >= todayStart && taskDate <= monthEnd;
+      }
+      if (dateFilter === 'custom' && customRange) {
+        return taskDate >= customRange.start && taskDate <= customRange.end;
+      }
+      return true;
+    });
+  };
+
+  const filteredTasks = getFilteredTasks();
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Tasks</Text>
-          <Text style={styles.subtitle}>You have {tasks.length} {activeTab} tasks</Text>
+          <Text style={styles.subtitle}>You have {filteredTasks.length} {activeTab} tasks</Text>
         </View>
         <TouchableOpacity 
           style={styles.addButton}
@@ -114,18 +216,59 @@ export default function TasksScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Date Filter Bar */}
+      <View style={styles.filterBarWrapper}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.filterBar}
+          contentContainerStyle={styles.filterBarContent}
+        >
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'today', label: 'Today' },
+            { key: 'tomorrow', label: 'Tomorrow' },
+            { key: 'week', label: 'This Week' },
+            { key: 'month', label: 'This Month' },
+            { key: 'custom', label: customRange ? `${formatShortDate(customRange.start)} - ${formatShortDate(customRange.end)}` : 'Custom Date' }
+          ].map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              onPress={() => handleFilterSelect(f.key as any)}
+              style={[
+                styles.filterPill,
+                dateFilter === f.key && styles.activeFilterPill
+              ]}
+            >
+              <Text style={[
+                styles.filterPillText,
+                dateFilter === f.key && styles.activeFilterPillText
+              ]}>
+                {f.label}
+              </Text>
+              {f.key === 'custom' && customRange && (
+                <TouchableOpacity onPress={clearCustomRange} style={{ marginLeft: 6 }}>
+                  <Ionicons name="close-circle" size={14} color={dateFilter === 'custom' ? '#FFF' : Colors.muted} />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {loading && !refreshing ? (
         <View style={styles.loader}>
           <ActivityIndicator color={Colors.primary} size="large" />
         </View>
       ) : (
         <FlatList
-          data={tasks}
+          data={filteredTasks}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TaskItem 
               task={item} 
               onComplete={handleCompleteTask}
+              onIncomplete={handleIncompleteTask}
               onDelete={handleDeleteTask}
             />
           )}
@@ -139,6 +282,24 @@ export default function TasksScreen() {
               <Text style={styles.emptyText}>No {activeTab} tasks found</Text>
             </View>
           }
+        />
+      )}
+
+      {showStartPicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={onStartChange}
+        />
+      )}
+      {showEndPicker && (
+        <DateTimePicker
+          value={tempStartDate || new Date()}
+          mode="date"
+          display="default"
+          minimumDate={tempStartDate || undefined}
+          onChange={onEndChange}
         />
       )}
 
@@ -162,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
   title: {
     fontSize: 28,
@@ -173,7 +334,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: Colors.muted,
-    fontFamily: 'DM Sans',
+    fontFamily: 'DM-Sans',
     marginTop: 4,
   },
   addButton: {
@@ -215,10 +376,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.muted,
-    fontFamily: 'DM Sans',
+    fontFamily: 'DM-Sans',
   },
   activeTabText: {
     color: Colors.text,
+  },
+  filterBarWrapper: {
+    height: 44,
+    marginBottom: 12,
+  },
+  filterBar: {
+    flex: 1,
+  },
+  filterBarContent: {
+    paddingHorizontal: 24,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  activeFilterPill: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.muted,
+    fontFamily: 'DM-Sans',
+  },
+  activeFilterPillText: {
+    color: '#FFF',
   },
   listContent: {
     paddingBottom: 100,
@@ -237,7 +434,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: Colors.muted,
-    fontFamily: 'DM Sans',
+    fontFamily: 'DM-Sans',
     marginTop: 16,
   },
 });

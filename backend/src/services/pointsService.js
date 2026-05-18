@@ -19,8 +19,8 @@ const PointsService = {
       const updateQuery = `
         UPDATE users 
         SET 
-          total_points = total_points + $1,
-          level = FLOOR((total_points + $1) / 1000) + 1
+          total_points = GREATEST(total_points + $1, 0),
+          level = FLOOR(GREATEST(total_points + $1, 0) / 1000) + 1
         WHERE id = $2
         RETURNING total_points, level;
       `;

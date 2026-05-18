@@ -104,6 +104,48 @@ const taskController = {
     }
   },
 
+  // PATCH /api/tasks/:id/incomplete - Mark incomplete and deduct points
+  async incompleteTask(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+
+      // 1. Mark task as incomplete
+      const updateTaskQuery = `
+        UPDATE tasks 
+        SET is_completed = false, completed_at = NULL 
+        WHERE id = $1 AND user_id = $2 AND is_completed = true
+        RETURNING *;
+      `;
+      
+      const result = await pool.query(updateTaskQuery, [id, userId]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'Task not found or not completed yet'
+        });
+      }
+
+      const task = result.rows[0];
+
+      // 2. Deduct points based on priority
+      const points = task.priority === 'high' ? -50 : -10;
+      const updatedUser = await PointsService.addPoints(userId, points);
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          task,
+          pointsDeducted: points,
+          userStats: updatedUser
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // 4.1.4 DELETE /api/tasks/:id - Delete task
   async deleteTask(req, res, next) {
     try {

@@ -15,9 +15,10 @@ interface TaskItemProps {
   };
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
+  onIncomplete?: (id: string) => void;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete }) => {
+export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete, onIncomplete }) => {
   const renderRightActions = (progress: any, dragX: any) => {
     const scale = dragX.interpolate({
       inputRange: [-100, 0],
@@ -41,10 +42,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete }
       extrapolate: 'clamp',
     });
 
+    const isCompleted = task.is_completed;
+    const actionColor = isCompleted ? Colors.warning : Colors.success;
+    const iconName = isCompleted ? 'arrow-undo-outline' : 'checkmark-circle-outline';
+
     return (
-      <TouchableOpacity onPress={() => onComplete(task.id)} style={styles.completeAction}>
+      <TouchableOpacity 
+        onPress={() => isCompleted ? onIncomplete?.(task.id) : onComplete(task.id)} 
+        style={[styles.completeAction, { backgroundColor: actionColor }]}
+      >
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons name="checkmark-circle-outline" size={24} color="#FFF" />
+          <Ionicons name={iconName} size={24} color="#FFF" />
         </Animated.View>
       </TouchableOpacity>
     );
@@ -64,15 +72,27 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete }
   return (
     <Swipeable
       renderRightActions={renderRightActions}
-      renderLeftActions={!task.is_completed ? renderLeftActions : undefined}
+      renderLeftActions={renderLeftActions}
     >
-      <View style={styles.container}>
-        <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(task.priority) }]} />
+      <View style={[
+        styles.container,
+        isOverdue && { borderColor: Colors.error, borderLeftWidth: 4, borderLeftColor: Colors.error }
+      ]}>
+        <TouchableOpacity 
+          onPress={() => task.is_completed ? onIncomplete?.(task.id) : onComplete(task.id)}
+          style={styles.checkboxContainer}
+        >
+          <Ionicons 
+            name={task.is_completed ? "checkmark-circle" : "ellipse-outline"} 
+            size={22} 
+            color={task.is_completed ? Colors.success : getPriorityColor(task.priority)} 
+          />
+        </TouchableOpacity>
         
         <View style={styles.content}>
           <View style={styles.mainInfo}>
             <View style={styles.titleRow}>
-              <Text style={[styles.title, task.is_completed && styles.completedText]}>
+              <Text style={[styles.title, task.is_completed && styles.completedText]} numberOfLines={1}>
                 {task.title}
               </Text>
               {isOverdue && (
@@ -93,10 +113,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onComplete, onDelete }
             </View>
           )}
         </View>
-
-        {task.is_completed && (
-          <Ionicons name="checkmark-circle" size={20} color={Colors.success} style={styles.checkIcon} />
-        )}
       </View>
     </Swipeable>
   );
@@ -116,19 +132,22 @@ const styles = StyleSheet.create({
     height: 64,
     paddingLeft: 12,
   },
-  priorityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  checkboxContainer: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingRight: 16,
   },
   mainInfo: {
     flex: 1,
+    marginRight: 8,
   },
   titleRow: {
     flexDirection: 'row',
@@ -162,9 +181,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Syne',
   },
-  checkIcon: {
-    marginRight: 12,
-  },
   deleteAction: {
     backgroundColor: Colors.error,
     justifyContent: 'center',
@@ -176,7 +192,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   completeAction: {
-    backgroundColor: Colors.success,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
