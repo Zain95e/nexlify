@@ -15,7 +15,7 @@ interface AddTaskModalProps {
 
 const PRIORITIES = ['low', 'medium', 'high'];
 
-const parseNaturalLanguageDate = (text: string): { cleanText: string; date?: Date } => {
+const parseNaturalLanguageDate = (text: string): { cleanText: string; date?: Date; matchedPhrase?: string } => {
   const lower = text.toLowerCase();
   const now = new Date();
   let parsedDate: Date | undefined = undefined;
@@ -25,11 +25,12 @@ const parseNaturalLanguageDate = (text: string): { cleanText: string; date?: Dat
   const tomorrowRegex = /\b(tomorrow|tom)\b/i;
   // 2. Check "today"
   const todayRegex = /\b(today)\b/i;
-  // 3. Check Saturday or sat/satur/saturday
-  const satRegex = /\b(saturday|satur|sat)\b/i;
-  // 4. Check Date format like "13 june" or "june 13"
+  // 3. Check Date format like "13 june" or "june 13"
   const dateRegex = /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\b/i;
   const dateRegexReverse = /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})\b/i;
+
+  // 4. Weekdays Regex (handling mon, mond, monda, monday, etc. for all days)
+  const weekdayRegex = /\b(monday|monda|mond|mon|tuesday|tuesda|tuesd|tues|tue|wednesday|wednesda|wednesd|wednes|wedne|wedn|wed|thursday|thursda|thursd|thurs|thur|thu|friday|frida|frid|fri|saturday|saturda|saturd|satur|satu|sat|sunday|sunda|sund|sun)\b/i;
 
   if (tomorrowRegex.test(lower)) {
     const match = text.match(tomorrowRegex);
@@ -42,14 +43,30 @@ const parseNaturalLanguageDate = (text: string): { cleanText: string; date?: Dat
     matchedPhrase = match ? match[0] : '';
     parsedDate = new Date(now);
     parsedDate.setHours(23, 59, 59, 999);
-  } else if (satRegex.test(lower)) {
-    const match = text.match(satRegex);
-    matchedPhrase = match ? match[0] : '';
-    parsedDate = new Date(now);
-    const currentDay = now.getDay();
-    const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
-    parsedDate.setDate(now.getDate() + daysUntilSaturday);
-    parsedDate.setHours(23, 59, 59, 999);
+  } else if (weekdayRegex.test(lower)) {
+    const match = text.match(weekdayRegex);
+    if (match) {
+      matchedPhrase = match[0];
+      const textPhrase = matchedPhrase.toLowerCase();
+      
+      let targetDayIdx = -1;
+      if (/^mon/i.test(textPhrase)) targetDayIdx = 1;
+      else if (/^tue/i.test(textPhrase)) targetDayIdx = 2;
+      else if (/^wed/i.test(textPhrase)) targetDayIdx = 3;
+      else if (/^thu/i.test(textPhrase)) targetDayIdx = 4;
+      else if (/^fri/i.test(textPhrase)) targetDayIdx = 5;
+      else if (/^sat/i.test(textPhrase)) targetDayIdx = 6;
+      else if (/^sun/i.test(textPhrase)) targetDayIdx = 0;
+
+      if (targetDayIdx !== -1) {
+        parsedDate = new Date(now);
+        const currentDayIdx = now.getDay();
+        // Calculate days difference to the NEXT target day index in future
+        const daysUntil = (targetDayIdx - currentDayIdx + 7) % 7 || 7;
+        parsedDate.setDate(now.getDate() + daysUntil);
+        parsedDate.setHours(23, 59, 59, 999);
+      }
+    }
   } else if (dateRegex.test(lower)) {
     const match = text.match(dateRegex);
     if (match) {
@@ -91,9 +108,11 @@ const parseNaturalLanguageDate = (text: string): { cleanText: string; date?: Dat
   }
 
   if (parsedDate && matchedPhrase) {
-    const regex = new RegExp(`\\b${matchedPhrase}\\b`, 'gi');
+    // Escape special characters in matchedPhrase to avoid regex failures
+    const escapedPhrase = matchedPhrase.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedPhrase}\\b`, 'gi');
     const cleanText = text.replace(regex, '').replace(/\s+/g, ' ').trim();
-    return { cleanText, date: parsedDate };
+    return { cleanText, date: parsedDate, matchedPhrase };
   }
 
   return { cleanText: text };
@@ -108,7 +127,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
   const [newCatInput, setNewCatInput] = useState('');
   const [showCatInput, setShowCatInput] = useState(false);
   
-  // CRITICAL FIX: Default time is ALWAYS 11:59 PM (end of execution window)
+  // Default deadline: today at 11:59 PM
   const [deadline, setDeadline] = useState(() => {
     const d = new Date();
     d.setHours(23, 59, 0, 0);
@@ -122,16 +141,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
   const handleTitleChange = (text: string) => {
     setTitle(text);
     const parsed = parseNaturalLanguageDate(text);
-    if (parsed.date) {
+    if (parsed.date && parsed.matchedPhrase) {
       setDeadline(parsed.date);
       
-      const lower = text.toLowerCase();
-      if (/\b(tomorrow|tom)\b/i.test(lower)) {
+      const lowerPhrase = parsed.matchedPhrase.toLowerCase();
+      if (/\b(tomorrow|tom)\b/i.test(lowerPhrase)) {
         setParsedDateBadge('Tomorrow (11:59 PM)');
-      } else if (/\b(today)\b/i.test(lower)) {
+      } else if (/\b(today)\b/i.test(lowerPhrase)) {
         setParsedDateBadge('Today (11:59 PM)');
-      } else if (/\b(saturday|satur|sat)\b/i.test(lower)) {
-        setParsedDateBadge('Saturday (11:59 PM)');
+      } else if (
+        /\b(monday|monda|mond|mon|tuesday|tuesda|tuesd|tues|tue|wednesday|wednesda|wednesd|wednes|wedne|wedn|wed|thursday|thursda|thursd|thurs|thur|thu|friday|frida|frid|fri|saturday|saturda|saturd|satur|satu|sat|sunday|sunda|sund|sun)\b/i.test(lowerPhrase)
+      ) {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = days[parsed.date.getDay()];
+        setParsedDateBadge(`${dayName} (11:59 PM)`);
       } else {
         setParsedDateBadge(`${parsed.date.toLocaleDateString([], { month: 'short', day: 'numeric' })} (11:59 PM)`);
       }
@@ -146,7 +169,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
       const newDate = new Date(deadline);
       newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       setDeadline(newDate);
-      setParsedDateBadge(null); // Clear smart badge since they manually selected
+      setParsedDateBadge(null);
     }
   };
 
@@ -156,7 +179,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
       const newDate = new Date(deadline);
       newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
       setDeadline(newDate);
-      setParsedDateBadge(null); // Clear smart badge since they manually selected
+      setParsedDateBadge(null);
     }
   };
 
@@ -173,7 +196,6 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
   const handleSubmit = () => {
     if (!title) return;
     
-    // Final check for smart date extraction
     const parsed = parseNaturalLanguageDate(title);
     const finalTitle = parsed.date ? parsed.cleanText : title;
     const finalDeadline = parsed.date ? parsed.date : deadline;
@@ -186,7 +208,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
       deadline: finalDeadline.toISOString() 
     });
     
-    // Reset form with default 11:59 PM time
+    // Reset Form
     setTitle('');
     setDescription('');
     const defaultD = new Date();
@@ -194,6 +216,38 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
     setDeadline(defaultD);
     setParsedDateBadge(null);
     onClose();
+  };
+
+  // Render Title input with parsed date keyword highlighted in-place!
+  const renderHighlightedText = (fullText: string) => {
+    if (!fullText) {
+      return <Text style={styles.placeholderStyle}>What needs to be done?</Text>;
+    }
+
+    const parsed = parseNaturalLanguageDate(fullText);
+    if (parsed.matchedPhrase) {
+      // Split by matched word case-insensitively
+      const escapedPhrase = parsed.matchedPhrase.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`(${escapedPhrase})`, 'gi');
+      const parts = fullText.split(regex);
+      return (
+        <Text style={styles.richText} numberOfLines={1}>
+          {parts.map((part, index) => {
+            const isMatch = part.toLowerCase() === parsed.matchedPhrase!.toLowerCase();
+            return (
+              <Text 
+                key={index} 
+                style={isMatch ? styles.highlightedWord : styles.normalWord}
+              >
+                {part}
+              </Text>
+            );
+          })}
+        </Text>
+      );
+    }
+
+    return <Text style={styles.richText} numberOfLines={1}>{fullText}</Text>;
   };
 
   return (
@@ -218,12 +272,30 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                 >
-                  <Input
-                    label="Task Title"
-                    placeholder="What needs to be done?"
-                    value={title}
-                    onChangeText={handleTitleChange}
-                  />
+                  {/* Smart Highlighted Title Input Area */}
+                  <View style={styles.smartInputContainer}>
+                    <Text style={styles.smartInputLabel}>Task Title</Text>
+                    <View style={styles.smartInputWrapper}>
+                      {/* Highlighted Visual Text Layer Behind */}
+                      <View style={styles.visualTextContainer} pointerEvents="none">
+                        {renderHighlightedText(title)}
+                      </View>
+                      
+                      {/* Input is placed on top. Transparent color when typing, so user sees highlighted visual text below */}
+                      <TextInput
+                        style={[
+                          styles.smartTextInput,
+                          title ? { color: 'transparent' } : { color: Colors.text }
+                        ]}
+                        placeholder="What needs to be done?"
+                        placeholderTextColor={Colors.muted}
+                        value={title}
+                        onChangeText={handleTitleChange}
+                        selectionColor={Colors.primary}
+                        autoFocus
+                      />
+                    </View>
+                  </View>
 
                   {parsedDateBadge && (
                     <View style={styles.parsedBadge}>
@@ -292,7 +364,12 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, on
                   </View>
 
                   <Text style={styles.label}>Category</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    style={styles.categoryRow}
+                    contentContainerStyle={styles.categoryRowContent}
+                  >
                     {categories.map((c) => (
                       <TouchableOpacity
                         key={c}
@@ -379,6 +456,67 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 16,
   },
+  smartInputContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  smartInputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.muted,
+    marginBottom: 6,
+    fontFamily: 'Syne',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  smartInputWrapper: {
+    height: 52,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingHorizontal: 16,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  smartTextInput: {
+    fontSize: 16,
+    fontFamily: 'DM-Sans',
+    height: '100%',
+    width: '100%',
+    padding: 0,
+    margin: 0,
+  },
+  visualTextContainer: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  placeholderStyle: {
+    fontSize: 16,
+    fontFamily: 'DM-Sans',
+    color: Colors.muted,
+  },
+  richText: {
+    fontSize: 16,
+    fontFamily: 'DM-Sans',
+    color: Colors.text,
+  },
+  normalWord: {
+    color: Colors.text,
+  },
+  highlightedWord: {
+    color: Colors.primary,
+    backgroundColor: 'rgba(108, 99, 255, 0.15)',
+    fontWeight: '700',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
   parsedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -451,6 +589,8 @@ const styles = StyleSheet.create({
   },
   categoryRow: {
     marginBottom: 16,
+  },
+  categoryRowContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
